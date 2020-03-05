@@ -1,0 +1,453 @@
+<title>LamdenWorld</title>
+<meta name="viewport" content="width=360, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+<style>
+* { font-family: Roboto Light, sans-serif; color: #fff; margin: 0 ; padding: 0; }
+html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-size: 90%; }
+#renderCanvas { width: 100%; height: 100%; }
+#fps-counter { position: fixed; bottom: 5px; left: 0px; width: 200px; text-align: center; z-index: 8;
+	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
+
+#labels { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#labels div { position: fixed; background: url(images/bg.jpg); padding: 5px; max-width: 200px; text-align: center;
+	border: 3px solid transparent; border-image: url(images/border.png) 6; box-shadow: inset 0 0 4px #000, inset 0 0 4px #000; }
+
+#unit-count { position: fixed; left: 50%; background: #000; width: 80px; height: 50px; text-align: center;
+	font-size: 150%; top: 0; margin-left: -40px; }
+#unit-count:after { position: fixed; top: 30px; left: 50%; margin-left: -40px; width: 80px; background: #000;
+	font-size: 60%; content: "units"; }
+
+#resources, #actions, #minimap, #chat-panel, #tabs, #info-panel { position: fixed; border: 6px solid transparent;
+	border-image: url(images/border.png) 8; background: url(images/bg.jpg);
+	box-sizing: border-box; box-shadow: inset 0 0 10px #000, inset 0 0 10px #000, inset 0 0 10px #000; }
+
+#resources { width: 150px; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,.6); padding: 5px; height: auto;
+	margin-bottom: 200px; background-image: url(images/bg2.jpg); box-shadow: inset 0 0 3px #000; }
+#resources li { float: left; width: 48px; height:48px; display: block; position: relative; margin: 5px; }
+#resources img { width: 48px; height: 48px; }
+#resources span { position: absolute; bottom: 0 ; right: 0;
+	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
+
+#marketplace { position: fixed; width: 500px; padding: 10px; top: 100px; left: 100px; background: rgba(0,0,0,.6);
+	display: none; }
+#marketplace table { width: 100%; }
+th, td { text-align: left; padding: 3px; }
+table .num { text-align: right; }
+
+#info-panel { position: fixed; width: 300px; padding: 10px; top: 0px; right: 0px; bottom: 140px; height: auto;
+	display: none; box-sizing: content-box; overflow-y: auto; }
+h2 { margin-top: 10px; }
+#info-panel progress { width: 300px; }
+#info-panel li {  display: block; font-size: 80%; }
+#info-panel b { display: block; font-size: 120%; }
+#info-panel li img { width: 40px; height: 40px; margin: 0px 5px; float: left; }
+#info-panel li a { padding: 5px 0px; display: block; height: 40px; }
+#info-panel li a:hover { background: rgba(255,255,255,.2); cursor: pointer; }
+select, input[type=text] { width: 250px; margin: 5px 0; padding: 5px; color: #000; }
+input[type=text] { width: 60px; }
+option { color: #000; padding: 5px; }
+button { color: #000; padding: 0px 20px; background: url(images/button2.png); background-size: cover; line-height: 30px;
+	width: 150px; border: none; color: #fff; cursor: pointer; margin-left: 60px; font-size: 115%; margin-top: 15px;
+	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
+button:hover { background-color: #935; }
+#info-panel dt { float: left; }
+#info-panel dd { text-align: right; }
+
+#minimap { position: fixed; bottom: 0px; left: 0px; width: 200px; height: 200px; background: rgba(128,128,128,1); }
+#chat-panel { bottom: 0px; left: 200px; padding: 10px; width: 400px; height: 200px; overflow-y: scroll; }
+#chat-panel li { display: block; }
+
+#actions { position: fixed; bottom: 0px; left: 600px; right: 200px; padding: 10px; width: auto; height: 140px; display: none;
+	background-image: url(images/bg2.jpg); box-shadow: inset 0 0 3px #000; }
+#actions li { display: block; float: left; width: 64px; height: 64px; margin-left: -32px; margin-top: -8px; margin-right: -5px; }
+#actions li:first-child { margin-left: 0; }
+#actions li:nth-child(even) { margin-top: 38px; }
+#actions img { width: 64px; height: 64px; cursor: pointer; filter: drop-shadow(2px 2px 5px rgba(0,0,0,.5)); }
+#actions img:hover { position: relative; top: -1px; left: -1px; filter: drop-shadow(3px 3px 5px #000); }
+#tabs { bottom: 0px; right: 0px; padding: 10px; width: 200px; height: 140px; background-image: url(images/bg2.jpg);
+	box-shadow: inset 0 0 3px #000; display: none; }
+#colonize-button { position: fixed; bottom: 5px; right: 5px; width: 128px; height: 128px; cursor: pointer; }
+#tabs li { display: block; cursor: pointer; margin-left: -0px; }
+#tabs li img { width: 52px; height: 52px; }
+
+#tooltip { position: fixed; min-width: 100px; max-width: 300px; padding: 10px; background: rgba(0,0,0,.6); pointer-events: none; }
+
+#settings { position: fixed; top: 50%; left: 50%; width: 600px; height: 400px; margin-left: -300px; margin-top: -200px;
+	background: rgba(0,0,0,.6); padding: 10px; display: none; }
+#settings li { display: block; }
+
+#loading-screen { position: fixed; top: 0; left: 0; z-index: 9; width: 100%; height: 100%; background: #000;
+	background-image: url(images/loading2.png); background-size: 400px; background-position: center;
+	background-repeat: no-repeat; cursor: wait; }
+#loading-screen p { position: fixed; top: 50%; text-align: center; margin-top: 150px; width: 100%; }
+.error { color: #f88; }
+
+</style>
+<body>
+<canvas id="renderCanvas"></canvas>
+<section id="labels"></section>
+<ul id="resources"></ul>
+<section id="info-bar">
+	<p id="unit-count">0</p>
+</section>
+<p id="fps-counter">0 fps</p>
+<section id="marketplace">
+	<h2>Marketplace</h2>
+	<table>
+		<tr><th class="num">#</th><th>Resource</th><th class="num">TAU</th><th class="num">Age</th><th>Posted by</th><th></th></tr>
+		<tr><td class="num">1k</td><td>Steel</td><td class="num">1000</td><td class="num">2h</td><td>Alex</td><td><button>Buy</button></td></tr>
+	</table>
+	<form>
+		<h3>Create Auction</h3>
+		<select>
+		</select>
+		<input type="text">
+		<button>Post </button>
+	</form>
+</section>
+<section id="info-panel"></section>
+<iframe id="minimap" src="map.html" scrolling="no"></iframe>
+<section id="chat-panel"><ul>
+	<li>Welcome to <img src="images/lamden.svg" style="width: 15px; height: 15px; "> LamdenWorld v0.1</li>
+</ul></section>
+<section id="actions"></section>
+<section id="tabs">
+<img id="colonize-button" src="icons/flag.png" title="Colonize">
+<ul>
+	<li data-tab="build"><img src="icons/house.png" title="Build Tab"></li>
+	<!--<li data-tab="attack"><img src="icons/missile.png"></li>-->
+	<li data-tab="defense"><img src="icons/shield.png" title="Defense Tab"></li>
+</ul></section>
+<section id="tooltip"></section>
+<section id="settings">
+<h2>Settings</h2>
+<form>
+	<ul>
+	<li><input type="checkbox" id="water-reflections">
+	<label for="water-reflection">Water Reflections</label></li>
+	<li><input type="checkbox" id="extended-camera">
+	<label for="water-reflection">Extend Camera Zoom</label></li>
+	</ul>
+	<button id="settings-ok">Ok</button>
+	<button id="settings-cancel">Cancel</button>
+</form>
+</section>
+<section id="loading-screen"><p>Loading...</p></section>
+</body>
+<script src="babylon.2.3.js"></script>
+<script src="jquery.js"></script>
+<script src="core.js"></script>
+<script src="blendMaterial.js"></script>
+<script src="watermaterial.js"></script>
+<script src="world.js"></script>
+<script src="ui.js"></script>
+<script src="custom.js"></script>
+<script>
+camera.lowerBetaLimit = .1;
+camera.upperBetaLimit = Math.PI * .4;
+camera.upperRadiusLimit = 250;
+camera.lowerRadiusLimit = 50;
+World.createWater({position: v(32, -.3, 32)});
+
+let building = new BABYLON.MeshBuilder.CreateBox('building', {width: 6, height: 2, depth: 6}, scene);
+building.position.y = -100;
+
+function mapPosition(x, y) {
+	return v((x - 0) * 9.2 - (y % 2 == 0 ? 4.6 : 0), 0, (y - 0) * 8);
+}
+function pos2tile(p) {
+	let y = Math.round(p.y / 8 + 0);
+	let x = Math.round(p.x / 9.2 + (y % 2 == 0 ? .5 : 0) + 0);
+	return v(x, y);
+}
+const Tiles = {};
+
+const Lamden = {
+	wallet: null,
+	contract: 'world034',
+	txCounter: 0,
+	Players: {},
+	initWallet(e) {
+		lamdenInfo = e.detail;
+		if (!lamdenInfo.installed) {
+			addMessage('Lamden Wallet Extension not found, <a href="https://github.com/Lamden/wallet">download here</a>', '#f88');
+			return;
+		}
+		if (lamdenInfo.locked) {
+			addMessage('Lamden Wallet locked, please login your Lamden wallet.', '#f88');
+			return;
+		}
+		let net = lamdenInfo.currentNetwork;
+		addMessage('Connected to ' + net.name + ' ' + net.ip + ':' + net.port, '#8cf');
+		console.log(lamdenInfo);
+		if (!lamdenInfo.currentNetwork.online) {
+			addMessage('' + net.name + ' not online', '#f88');
+		}
+		if (!lamdenInfo.wallets[0]) {
+			lamdenInfo.wallets = [{vk: '01a5a54c53777f0996d5b940e1890a555d5ab31af0e52e00efd3d70dd07e14ac'}];
+			addMessage('No primary wallet found in your Lamden account', '#f88');
+			//return false;
+		}
+		Lamden.wallet = lamdenInfo.wallets[0].vk;
+		Lamden.wallet = prompt('wallet');
+		addMessage('Using wallet ' + Lamden.wallet.substr(0,16) + '...', '#8cf');
+		Lamden.url = net.ip + ':' + net.port + '/contracts/' + Lamden.contract;
+		loadAssets();
+	},
+	sendTx(methodName, args) {
+		let stampLimit = 50000;
+		let kwargs = {};
+		for (var a in args) {
+			kwargs[a] = {type: 'text', value: String(args[a])};
+		}
+		let contractName = Lamden.contract;
+		let detail = {senderVk: Lamden.wallet, contractName: Lamden.contract, methodName, kwargs, stampLimit};
+		console.log(detail);
+		document.dispatchEvent(new CustomEvent('signTx', {detail}));
+	},
+	getCapital() {
+		if (!Lamden.wallet) {
+			return false;
+		}
+		$.get('./player.php?owner=' + Lamden.wallet, function(e) {
+			console.log(e);
+			data = JSON.parse(e);
+			console.log('Get Player Data: ' + e, data, Object.keys(data).length);
+			if (!data.name) {
+				addMessage('Capital not found for player ' + Lamden.wallet); // not an error per se, could be new player
+				return false;
+			}
+			Lamden.Players[Lamden.wallet] = data;
+			addMessage('Capital found at [' + data.x + ',' + data.y + ']');
+			Tiles[data.x + ',' + data.y].name = data;
+			Tiles[data.x + ',' + data.y].updated = UI.now();
+			Player.capital = true;
+			$('#actions, #tabs').fadeIn(500);
+			setBuildingData(Tiles['' + data.x + ',' + data.y], 1, Lamden.wallet);
+			camera.target.position = mapPosition(data.x, data.y);
+			for (let i in data.resources) {
+				changePlayerResource(i, data.resources[i]);
+			}
+			for (let i in data.research) {
+				World.Technologies[i].started = data.research[i];
+			}
+			updateUnitCount(data.troops);
+			window.setInterval(function() {
+				Lamden.updatePlayer();
+			}, 10000);
+		});
+		return;
+		$.get(Lamden.url + '/players?key=' + Lamden.wallet, function(e) {
+			console.log('Get Capital: ' + e.value);
+			data = JSON.parse(e.value);
+			if (!data) {
+				addMessage('Capital not found for player ' + Lamden.wallet); // not an error per se, could be new player
+				return false;
+			}
+			Lamden.Players[Lamden.wallet] = data;
+			addMessage('Capital found at [' + data[1] + ',' + data[2] + ']');
+			Tiles[data[1] + ',' + data[2]].name = data[0];
+			Tiles[data[1] + ',' + data[2]].updated = UI.now();
+			setBuildingData(Tiles['' + data[1] + ',' + data[2]], 0, Lamden.wallet);
+			camera.target.position = mapPosition(data[1], data[2]);
+			Lamden.getResources();
+		}).fail(function() {
+			addMessage('Cannot connect to contract', '#f88');
+		});
+	},
+	// sync player resources and techs from server
+	updatePlayer() {
+		$.get('./player.php?owner=' + Lamden.wallet, function(e) {
+			data = JSON.parse(e);
+			console.log('Get Player Data: ' + e, data);
+			for (var i in data.resources) {
+				if (data.resources[i] - (Player.Resources[i] || 0) != 0) {
+					changePlayerResource(i, data.resources[i] - (Player.Resources[i] || 0));
+				}
+			}
+			updateUnitCount(data.troops);
+		});
+	},
+	getResources() {
+		if (!Lamden.wallet) {
+			return false;
+		}
+		for (let i = 0; i < 5; i++) {
+			$.get(Lamden.url + '/playerResources?key=' + Lamden.wallet + ',' + i, function(e) {
+				let amount = JSON.parse(e.value) || 0;
+				console.log('Resource id ' + i + ' ' + amount);
+				changePlayerResource(i, amount);
+			});
+		}
+
+	},
+	getPlayer(address) {
+		address = address || Lamden.wallet;
+		$.get(Lamden.url + '/players?key=' + address, function(e) {
+			console.log('Get Player: ' + e);
+			Lamden.Players[address] = JSON.parse(e.value);
+		});
+	}
+}
+/*
+document.addEventListener('lamdenWalletInfo', Lamden.initWallet);
+window.setTimeout(function() {
+	document.dispatchEvent(new CustomEvent('getLamdenWalletInfo'));
+}, 100);
+*/
+window.addEventListener('load',function() {
+	Lamden.wallet = prompt('wallet');
+	//changePlayerResource(0, 100000);
+	//changePlayerResource(1, 100000);
+	//changePlayerResource(2, 100000);
+//	$('#actions, #tabs').fadeIn(500);
+	$('#loading-screen').hide();
+	//return;
+	loadAssets();
+
+});
+document.addEventListener('txStatus', (e) => {
+	console.log(e.detail);
+	console.log(e.detail.data);
+	if (e.detail.status != 'success') {
+		return false;
+	}
+	if (e.detail.data.state_changes) {
+		let mutations = e.detail.data.state_changes;
+		for (var m in mutations) {
+			let key = m.split(':');
+			let value = JSON.parse(mutations[m]);
+
+			// tile changes
+			if (key[1] == 'tiles') {
+				Tiles[key[2]].owner = value[1];
+				Tiles[key[2]].building = value[2];
+			}
+		}
+		//World.drawWorld(true);
+		updateSPSMeshes();
+	}
+});
+
+//		loadAssets();
+
+
+function loadAssets() {
+	BABYLON.SceneLoader.ImportMesh('', 'data/', 'character.babylon?3', scene, function(meshes) {
+		for (let m in meshes) {
+			meshes[m].setEnabled(false);
+		}
+		//scene.getMeshByName('Base_mesh').scaling.scaleInPlace(.1);
+		//scene.getMeshByName('Soldier_01_mesh').scaling.scaleInPlace(.1);
+		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?23', scene, function(meshes) {
+			for (let m in meshes) {
+				meshes[m].position.scaleInPlace(.22);
+				meshes[m].position.y = 1;
+				meshes[m].scaling.scaleInPlace(.22);
+				World.assets[meshes[m].name] = meshes[m];
+				meshes[m].setEnabled(false);
+				scene.meshes.splice(scene.meshes.indexOf(meshes[m]), 1);
+			}
+
+			// create UI helper meshes
+			UI.tileHover = World.assets['NGon001'].clone('Hover');
+			UI.tileHover.rotation.y = Math.PI / 2;
+			UI.tileHover.scaling = v(1,1,1).scaleInPlace(.22);
+			UI.tileHover.material = new BABYLON.StandardMaterial('Hover', scene);
+			UI.tileHover.material.alpha = .3;
+
+			UI.tileSelect = new BABYLON.Mesh.CreatePlane('TileSelect', 12, scene);
+			UI.tileSelect.position.y = -10;
+			UI.tileSelect.rotation.x = Math.PI / 2;
+			UI.tileSelect.rotation.y = Math.PI / 2;
+			UI.tileSelect.material = new BABYLON.StandardMaterial('Selector', scene);
+			UI.tileSelect.material.opacityTexture = new BABYLON.Texture('textures/hexring.jpg', scene);
+			UI.tileSelect.material.opacityTexture.getAlphaFromRGB = true;
+			let frame = 0;
+			scene.registerBeforeRender(function() {
+				frame += 1/engine.fps;
+				UI.tileSelect.scaling = v(1,1,1).scaleInPlace(1 + Math.sin(frame*2) * .2);
+			});
+
+			UI.unitSelect = new BABYLON.Mesh.CreatePlane('UnitSelect', 6, scene);
+			UI.unitSelect.position.y = -10;
+			UI.unitSelect.rotation.x = Math.PI / 2;
+			UI.unitSelect.rotation.y = Math.PI / 2;
+			UI.unitSelect.material = new BABYLON.StandardMaterial('Selector', scene);
+			UI.unitSelect.material.opacityTexture = new BABYLON.Texture('textures/circle1.jpg', scene);
+			UI.unitSelect.material.opacityTexture.getAlphaFromRGB = true;
+			scene.registerBeforeRender(function() {
+				UI.unitSelect.rotation.y += .2 / engine.fps;
+				if (UI.selectedUnit) {
+					UI.unitSelect.position = UI.selectedUnit.position.add(v(0,.03,0));
+				}
+			});
+
+			UI.tileTarget = new BABYLON.Mesh.CreatePlane('tileTarget', 12, scene);
+			UI.tileTarget.position.y = -10;
+			UI.tileTarget.rotation.x = Math.PI / 2;
+			UI.tileTarget.rotation.y = Math.PI / 2;
+			UI.tileTarget.material = new BABYLON.StandardMaterial('Selector', scene);
+			UI.tileTarget.material.opacityTexture = new BABYLON.Texture('textures/circle2.jpg', scene);
+			UI.tileTarget.material.opacityTexture.getAlphaFromRGB = true;
+			scene.registerBeforeRender(function() {
+				UI.tileTarget.rotation.y += .2 / engine.fps;
+			});
+
+			UI.friendlyTerritory = World.assets['NGon001'].clone('Friendly');
+			UI.friendlyTerritory.material = new BABYLON.StandardMaterial('Friendly', scene);
+			UI.friendlyTerritory.material.diffuseColor = color(0,.5,1);
+			UI.friendlyTerritory.material.specularColor = color(0,0,0);
+			UI.friendlyTerritory.material.alpha = .5;
+
+			UI.enemyTerritory = World.assets['NGon001'].clone('Enemy');
+			UI.enemyTerritory.material = new BABYLON.StandardMaterial('Enemy', scene);
+			UI.enemyTerritory.material.diffuseColor = color(1,0,0);
+			UI.enemyTerritory.material.specularColor = color(0,0,0);
+			UI.enemyTerritory.material.alpha = .3;
+
+			UI.tileHighlight = new BABYLON.Mesh.CreatePlane('HighlightTile', 12, scene);
+			UI.tileHighlight.position.y = -10;
+			UI.tileHighlight.rotation.x = Math.PI / 2;
+			UI.tileHighlight.rotation.y = Math.PI / 2;
+			UI.tileHighlight.material = new BABYLON.StandardMaterial('HighlightTile', scene);
+			UI.tileHighlight.material.diffuseColor = color(.6,.8,1);
+			UI.tileHighlight.material.opacityTexture = new BABYLON.Texture('textures/hexring2.jpg', scene);
+			UI.tileHighlight.material.opacityTexture.getAlphaFromRGB = true;
+
+			World.assets['Forest10'].material.ambientColor = color(.5,.5,.5);
+			World.assets['Rock10'].material.ambientColor = color(.5,.5,.5);
+			World.assets['Rock2'].material.ambientColor = color(.5,.5,.5);
+			World.assets['Mine1'].material.ambientColor = color(.5,.5,.5);
+			World.assets['Barracks2'].material.ambientColor = color(.5,.5,.5);
+			World.assets['Powerplant2'].material.ambientColor = color(.5,.5,.5);
+			World.assets['Refinery2'].material.ambientColor = color(.5,.5,.5);
+			World.assets['Desert10'].material.ambientColor = color(.5,.5,.5);
+			World.assets['NGon001'].setVerticesData('color', new Array(48).fill(1));
+			//World.assets['Pumpjack'].material = World.assets['Pumpjack'].material.clone();
+			//World.assets['Pumpjack Arm'].material = World.assets['Pumpjack'].material.clone();
+
+			World.loadImage('textures/map2.png');
+		});
+	});
+}
+
+function renderLoop() {
+	if (shadowGenerator.getShadowMap()._currentRefreshId == shadowGenerator.getShadowMap()._refreshRate) {
+		//sun.shadowFrustumSize = camera.radius * 2;
+		shadowMesh.scaling = v(camera.radius / 30, camera.radius / 30, camera.radius / 30);
+		shadowMesh.position = camera.target.position.clone();
+		//sun.position = torch.position.add(v(camera.radius * 1.6,2,0));
+	}
+	$('#fps-counter').text('(' + engine.drawCalls + ' draw calls) ' + Math.round(engine.fps) + ' fps');
+	let tile = pos2tile(v(camera.target.position.x, camera.target.position.z));
+	document.getElementById('minimap').contentWindow.scrollTo(
+		512 - 100 + tile.x * 2,
+		512 - 100 - tile.y * 2
+	);
+
+
+	scene.render();
+
+}
+
+</script>

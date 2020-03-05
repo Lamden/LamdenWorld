@@ -1,0 +1,176 @@
+<title>World</title>
+<style>
+* { font: 11pt Roboto Light, sans-serif; color: #fff; margin: 0 ; padding: 0; }
+html, body { height: 100%; margin: 0; background: #000; overflow: hidden; }
+#renderCanvas { width: 100%; height: 100%; }
+#fps-counter { position: fixed; top: 10px; right: 10px; }
+
+</style>
+<body>
+<canvas id="renderCanvas"></canvas>
+<p id="fps-counter">0 fps</p>
+</body>
+<script src="babylon.2.3.js"></script>
+<script src="jquery.js"></script>
+<script src="core.js"></script>
+<script src="hexasphere.js"></script>
+<script>
+scene.ambientColor = color(.1,.1,.1);
+box = new BABYLON.Mesh.CreateBox('asd', 1, scene);
+sphere = new BABYLON.Mesh.CreateSphere('sgsdfg', 3, 1, scene);
+
+
+var maxLat = -100;
+var maxLon = 0;
+var minLat = 0;
+var minLon = 0;
+
+var isLand = function(lat, lon){
+
+	var x = parseInt(img.width * (lon + 180) / 360);
+	var y = parseInt(img.height * (lat+90) / 180);
+
+	if(pixelData == null){
+		pixelData = projectionContext.getImageData(0,0,img.width, img.height);
+	}
+	return pixelData.data[(y * pixelData.width + x) * 4] === 0;
+};
+
+
+var meshMaterials = [];
+grass = new BABYLON.StandardMaterial('asdsa', scene);
+grass.ambientColor = color(.5,.5,.5);
+grass.diffuseColor = color(.4,.6,.2);
+grass.specularColor = color(.1,.1,.1);
+
+water = new BABYLON.StandardMaterial('water', scene);
+water.ambientColor = color(.5,.5,.5);
+water.diffuseColor = color(.2,.4,.6);
+water.specularColor = color(0,0,0);
+
+desert = new BABYLON.StandardMaterial('desert', scene);
+desert.ambientColor = color(.5,.5,.5);
+desert.diffuseColor = color(1,.9,.8);
+desert.specularColor = color(0,0,0);
+
+sphere.material = grass;
+var oceanMaterial = [];
+
+var introTick = 0;
+var seenTiles = {};
+var currentTiles = [];
+
+var createScene = function(radius, divisions, tileSize){
+	introTick = -1;
+	var hexasphere = new Hexasphere(20, 12, .99);
+
+	var c = 0;
+	for(var i = 0; i < hexasphere.tiles.length; i++){
+		var t = hexasphere.tiles[i];
+		var latLon = t.getLatLon(hexasphere.radius);
+
+		var points = [];
+		for(var j = 0; j< t.boundary.length; j++){
+			var bp = t.boundary[j];
+			points.push(v(bp.x, bp.y, bp.z));
+
+		}
+
+		var path = [];
+		path.push([points[0], points[1]]);
+		path.push([points[0], points[2]]);
+		path.push([points[0], points[3]]);
+		path.push([points[0], points[4]]);
+		if(points.length > 5){
+			path.push([points[0], points[5]]);
+		}
+
+		var tile = BABYLON.Mesh.CreateRibbon("hex" + i, path, true, false, 0, scene);
+		tile.convertToFlatShadedMesh();
+		if(Math.random() < .7){
+			tile.material = grass;
+			if(Math.random() < .4){
+				sphere.material = grass;
+				var pos = v(t.centerPoint.x,t.centerPoint.y,t.centerPoint.z);
+				sphere.position = pos;
+				sphere.lookAt(v(0,0,0));
+				sphere.movePOV(0, 0, -1);
+				var rot = sphere.rotationQuaternion.toEulerAngles();
+				sphere.computeWorldMatrix(true);
+				addModel(sphere, pos, rot, 1);
+			}
+		} else if(Math.random() < .2){
+			tile.material = desert;
+	//			sphere.material = desert;
+		} else {
+			tile.material = water;
+	//			sphere.material = water;
+		}
+
+		addModel(tile);
+		//hexasphere.tiles[i].done = c;
+
+	}
+
+	updateSPSMeshes()
+	console.log(hexasphere, i);
+	engine.runRenderLoop(renderLoop);
+
+	window.hexasphere = hexasphere;
+	return;
+
+
+	for(var i = 0; i< hexasphere.tiles.length; i++){
+		var t = hexasphere.tiles[i];
+		var latLon = t.getLatLon(hexasphere.radius);
+
+		var geometry = new THREE.Geometry();
+
+		for(var j = 0; j< t.boundary.length; j++){
+			var bp = t.boundary[j];
+			geometry.vertices.push(new THREE.Vector3(bp.x, bp.y, bp.z));
+		}
+		geometry.faces.push(new THREE.Face3(0,1,2));
+		geometry.faces.push(new THREE.Face3(0,2,3));
+		geometry.faces.push(new THREE.Face3(0,3,4));
+		if(geometry.vertices.length > 5){
+			geometry.faces.push(new THREE.Face3(0,4,5));
+		}
+
+		//if(isLand(latLon.lat, latLon.lon)){
+		if (Math.random() < .4) {
+			material = meshMaterials[Math.floor(Math.random() * meshMaterials.length)]
+		} else {
+			material = oceanMaterial[Math.floor(Math.random() * oceanMaterial.length)]
+		}
+
+		material.opacity = 0.3;
+		var mesh = new THREE.Mesh(geometry, material.clone());
+		scene.add(mesh);
+		hexasphere.tiles[i].mesh = mesh;
+
+	}
+
+	seenTiles = {};
+
+	currentTiles = hexasphere.tiles.slice().splice(0,12);
+	currentTiles.forEach(function(item){
+		seenTiles[item.toString()] = 1;
+		item.mesh.material.opacity = 1;
+	});
+
+	introTick = 0;
+};
+createScene();
+
+function renderLoop() {
+	if (shadowGenerator.getShadowMap()._currentRefreshId == shadowGenerator.getShadowMap()._refreshRate) {
+		//sun.shadowFrustumSize = camera.radius * 6;
+		shadowMesh.scaling = v(camera.radius / 20, camera.radius / 20, camera.radius / 20);
+		shadowMesh.position = camera.target.position.clone();
+		sun.position = torch.position.add(v(camera.radius * 1.6,2,0));
+	}
+	$('#fps-counter').text('(' + engine.drawCalls + ' draw calls) ' + Math.round(engine.fps) + ' fps');
+	scene.render();
+}
+</script>

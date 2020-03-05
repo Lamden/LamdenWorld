@@ -1,0 +1,152 @@
+<style>
+
+body { text-align: center; font-family: Lucida Sans Unicode, sans-serif; background: #eee; }
+main { width: 1024px; margin: 0 auto; text-align: left; background: #fff; padding: 20px;
+	box-shadow: 0 0 10px #000; }
+h1 { margin: 0 ;}
+h1+h2 { margin-top: 0; }
+
+a.ingame { color: #000; padding: 5px 10px 5px 25px; background: #353 url(images/logo4.png); background-size: 18px; background-position: 5px 5px;
+	background-repeat: no-repeat; border: none; color: #cfc; white-space: nowrap; }
+
+img { box-shadow: 2px 2px 5px #000; }
+main > img { width: 100%; margin: 10px 0; }
+img.left { float: left; margin-right: 10px; width: auto; }
+img.right { float: right; width: 40%; }
+</style>
+<body>
+<main>
+<img src="images/banner1.jpg">
+<h1>LamdenWorld</h1>
+<h2>Blockchain RTS game</h2>
+<p>LamdenWorld is a browser-based full 3D RTS strategy game running on Lamden Blockchain where you can earn a pot of TAU which all players contribute to by winning a game session. </p>
+<p></p>
+<h2>Begin</h2>
+<p>
+	You start with a town center on a tile. You need resources to do things in the game, the main one being Energy.
+</p>
+<img class="left" src="images/energy1.jpg"><h2>Energy</h2>
+<p>
+	Energy is mainly produced in your town center. It has be be harvested from time to time to avail it.
+	To increase your rate of energy generation, you can reate power plants, however they produce energy
+	at a much slower speed than your town center.
+</p>
+<h2>Collecting Resources</h2>
+<p>
+	There are two types of resources: raw and processed resources. There are three raw resources: rock,
+	ore and crude. They can be mined with mines and then refined into processed resources.
+</p>
+<p>To collect raw resources (rock, ore and crude) you'll have to colonize a few tiles. This can be done
+	by selecting a tile adjacent to a tile you already own, and clicking <a class="ingame">Colonize</a>.
+	Colozing costs Energy.
+	To replenish Energy, you can select your town center and click harvest. Later in the game you can also
+	build power plants to generate more energy, although they generate much less power than your town center.
+</p>
+<p>You can build a building on empty tiles you own. The Ore Mine, Oil Well and Rock Mine are resource mines
+	and produce sedementary rock, ore and crude oil respectively. After building you can switch between them
+	to change the resource produced. A mine will only produce one resource at the same time. To make a mine,
+	click an empty tile you own, then click the type of mine you want to build. It takes some time for
+	construction to be complete for you to use any building.
+</p>
+
+<p><img class="right" src="images/miningrate.jpg">
+	After building the mine, the speed of gathering depends on a number of multipliers:
+</p>
+<ul>
+	<li>The kind of tile, different kinds of tiles produce different amounts of different resources. </li>
+	<li>The level of the mine. Mines start at level 1 and can be upgraded for a cost. While leveling up is
+	infinite, it costs increasingly more per level and has diminishing returns for every level. </li>
+	<li>Some technologies will increase mining speed when researched. </li>
+</ul>
+<p><img class="right" src="images/harvest.jpg">
+	Mines have to be harvested to add the resources to your resource pool. If you don't harvest them they
+	will reach their capacity after a while and won't produce more until harvested. To harvest a mine, select
+	it and click the <a class="ingame">Harvest</a> button. After harvesting, mines automatically start mining
+	again, even when stalled because of capacity.
+</p>
+<img src="images/refinery1.jpg">
+<h2>Refining</h2>
+<p><img class="right" src="images/refinery2.jpg">
+	To be able to use the raw resources, you'll have to refine them to processed resources. This can be done in
+	a refinery. To build a refinery, select an empty tile you own, then click Refinery from the available building
+	list. After construction is finished you can start refining.
+</p>
+<p>
+	Refining is limited by speed and refiner capacity, both of which can be upgraded by building level and
+	technologies. To refine a raw resource, click an idle refinery you own and select your desired production
+	from the drop down list, then clicking <a class="ingame">Refine</a>. When refining is completed, you can
+	collect the processed resource by clicking
+	Collect.
+</p>
+<h2>Building</h2>
+<p>
+	When you have enough processed resources you can start constructing other buildings. You can only build
+	buildings on empty tiles you colonized.
+</p>
+<ul>
+	<li>Barracks: you can produce troops here. Production speed varies on building level and researched techs.</li>
+	<li>Tank Factory: you can produce a lot more units here faster than Barracks at a premium cost. </li>
+	<li>Harbor: you can produce naval units here, which can move on water but not on land. </li>
+	<li>Power plant: power plants generate additional energy.</li>
+	<li>Missile Silo: This building fires a powerful missile at a target tile dealing quite a bit of damage. </li>
+</ul>
+<h2>Leveling up Buildings</h2>
+<p>
+	All buildings when constructed start at level 1. Various buildings like mines, refineries, barracks can
+	be leveled up. Leveling up a building costs resources. Every level costs more than the previous one.
+	leveling up buildings makes their function more efficient. For mines this means faster mining, for
+	refineries faster refining, for barracks faster and cheaper production.
+</p>
+<img src="images/fortification.jpg" class="left" style="width: 300px; "><h2>Fortifications</h2>
+<p>
+	Any tile you own can be fortified with a fortification regardless of whether you have built anything there.
+	To fortify a tile, select it then click Fortify. Fortifications cost resources and increase HP of the tile.
+	This additional HP is shown in the thin health bar below the main health bar of the tile when selected.
+</p>
+<h2>Unit Training</h2>
+<p>
+	To create your army, you can create troops at Barracks and Tank Factory in batches. Training speed and
+	batch capacity depends on building level and technologies researched. Higher building level also decreases
+	the cost per unit trained.
+</p>
+<p>
+	Units are uniform. Tiles have a capacity of maximum units they can hold simultaneously. This capacity can be
+	increased with technologies or by constructing a Bunker on a tile, the latter of which increases the
+	capacity by a fairly big margin. Stacking lots of units in a single bunker makes them a powerful
+	concentration of your forces, able to withstand a large opposing force, however makes them vulnerable
+	to missile attacks, which may wipe out a large portion of units on the tile.
+</p>
+<p>
+	To train units, select any barracks or tank factory you own and click Train to train as many units as the
+	training building can produce in one batch.
+</p>
+<h2>Moving troops</h2>
+<p>
+	You can move units to other tiles. Doing any action with a group of units, including
+	moving, triggers a cooldown which must be finished before you can do anything else with the units again.
+</p>
+<p>
+	To move units, select them, then right-click any tile within moving distance (3 or more depending on
+	technologies researched). You can move units to a tile which already contains some of your units. This
+	will merge the units together, making one larger army on the tile. You cannot move your units on tiles
+	which are occupied by enemy units or enemy territory. Trying to move units to a tile occupied by the enemy
+	is considered attacking those units/territory.
+</p>
+<h2>Units v units Battle</h2>
+<p>
+	You can use your troops to attack
+</p>
+<img src="images/missile2.jpg"><h2>Firing Missiles</h2>
+<p>
+	Another way to defend your territory or attack enemy territory is with long-range missiles. These can be
+	fired from a Missile Silo. It costs Energy and Uranium to fire a missile. The more uranium you invest
+	when firing a missile, the more powerful it will be.
+</p>
+<p>
+	To fire a missile, select a missile silo, enter yor desired power value (more powerful will be more
+	expensive), click <a class="ingame">Launch Missile</a>, then <b>right-click</b>
+	any neighboring tile within a 5 tile radius to target it.
+</p>
+
+</main>
+</body>

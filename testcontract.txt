@@ -1,0 +1,5 @@
+def contract():
+  tiles = Hash()
+  @export
+  def set_tile(x, y, type):
+    tiles[x, y] = type

@@ -221,9 +221,11 @@ const World = {
 					} else if (Tiles[id].type != 'water') {
 						let tank = addTank(tiles[t].x, tiles[t].y, id, tiles[t].troopOwner);
 						tank.troops = tiles[t].numTroops;
+						$('#' + tank.id).html(formatName(tank.owner) + '<br>' + tank.troops);
 					} else {
 						let ship = addShip(tiles[t].x, tiles[t].y, id, tiles[t].troopOwner);
 						ship.troops = tiles[t].numTroops;
+						$('#' + ship.id).html(formatName(ship.owner) + '<br>' + ship.troops);
 					}
 				}
 			}
@@ -268,6 +270,8 @@ const World = {
 							Tiles[id].collected = true;
 							if (Tiles[id].unit) {
 								Tiles[id].unit.troops += parseInt(amount);
+								let unitID = Tiles[id].unit.id;
+								$('#' + unitID).html(formatName(Tiles[id].unit.owner) + '<br>' + Tiles[id].unit.troops);
 							} else {
 								if (Tiles[id].building == 8) {
 									addUnit(amount, mapPosition(log[i].x, log[i].y), id, Tiles[id].owner);
@@ -284,12 +288,16 @@ const World = {
 							}
 
 							if (Tiles[id2].unit && Tiles[id2].unit.owner == Lamden.wallet) { // merge units
-								let troops = parseInt(Tiles[id2].troops);
-								Tiles[id2].dispose();
-								Tiles[id].unit.troops += troops;
+								let troops = parseInt(Tiles[id].unit.troops);
+								let unitID = Tiles[id].unit.id;
+								$('#' + unitID).remove();
+								Tiles[id].unit.dispose();
+								Tiles[id2].unit.troops += troops;
+								unitID = Tiles[id2].unit.id;
+								$('#' + unitID).html(formatName(Tiles[id2].unit.owner) + '<br>' + Tiles[id2].unit.troops);
 								addMessage('Units merged. now counting ' + Tiles[id].unit.troops);
 								UI.selectedUnit = Tiles[id].unit; // change selection to
-								UI.selectedUnit.ready = now + 30;
+								UI.selectedUnit.ready = UI.now() + 30;
 								$('#info-panel').hide();
 								return;
 							}
@@ -314,7 +322,6 @@ const World = {
 							tileHtml(UI.selectedTile);
 						}
 					}
-
 				});
 			}, 1000);
 		});
@@ -681,7 +688,9 @@ scene.registerBeforeRender(function() {
 	for (let u in World.units) {
 		let id = World.units[u].id;
 		let pos = getScreenCoords(World.units[u].position.add(v(0,10,0)));
-		$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
+		if (document.getElementById(id)) {
+			$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
+		}
 	}
 });
 
@@ -690,9 +699,9 @@ function battle(a, b, aRemain, bRemain) {
 	//var power2 = Math.round(Math.random() * a.troops * (techHasResearched(5) ? 1.1 : 1));
 	//b.troops -= power2;
 	b.troops = bRemain;
-	$('#u' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
+	$('#' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
 	a.troops = aRemain;
-	$('#u' + b.id).html(formatName(b.owner) + '<br>' + b.troops);
+	$('#' + b.id).html(formatName(b.owner) + '<br>' + b.troops);
 
 	let explosion1 = particles(b, 'explosion');
 	explosion1.start();
@@ -748,7 +757,8 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 	//let power2 = Math.round(Math.random() * a.troops * 2);
 	//a.troops -= power1;
 	a.troops = aRemain;
-	$('#u' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
+	console.log(a.id, a.troops);
+	$('#' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
 	b.fortification = bFort;
 	b.currentHP = bRemain;
 	let explosion1 = particles(b.mesh, 'explosion');

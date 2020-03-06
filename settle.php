@@ -21,7 +21,7 @@ $sql->q("INSERT INTO resources (owner, resource, amount) VALUES('$owner', 0, 200
 $sql->q("INSERT INTO resources (owner, resource, amount) VALUES('$owner', 1, 10000)");
 $sql->q("INSERT INTO resources (owner, resource, amount) VALUES('$owner', 2, 10000)");
 $sql->q("INSERT INTO resources (owner, resource, amount) VALUES('$owner', 3, 10000)");
-$sql->q("INSERT INTO resources (owner, resource, amount) VALUES('$owner', 4, 1000)");
+$sql->q("INSERT INTO resources (owner, resource, amount) VALUES('$owner', 4, 10000)");
 $sql->q("INSERT INTO log (type, x, y, var1) VALUES('colonize', $x, $y, '$owner')");
 $sql->q("INSERT INTO log (type, x, y, var1) VALUES('build', $x, $y, 1)");
 echo sql2json($sql->q("SELECT * FROM tiles WHERE x = $x AND y = $y"));

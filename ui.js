@@ -186,10 +186,10 @@ function updateConstructionProgress() {
 	}
 	let now = UI.now();
 
-	if (!Tiles[UI.selectedTile].constructionFinished || Tiles[UI.selectedTile].constructionFinished < now) {
+	if (!Tiles[UI.selectedTile].constructionFinished || Tiles[UI.selectedTile].constructionFinished <= now - 5) {
 		$('#building-progress').hide();
 		return;
-	} else if (!Tiles[UI.selectedTile].constructionFinished || (Tiles[UI.selectedTile].constructionFinished > now && Tiles[UI.selectedTile].constructionFinished < now + 5)) {
+	} else if (!Tiles[UI.selectedTile].constructionFinished || (Tiles[UI.selectedTile].constructionFinished < now && Tiles[UI.selectedTile].constructionFinished > now - 5)) {
 		tileHtml(UI.selectedTile);
 		return;
 	}
@@ -231,7 +231,7 @@ function updateConversionProgress() {
 	let min = tile.lastHarvest;
 	let current = now - tile.lastHarvest;
 	let progress = current / custom.refineryDuration(level, tile.convertAmount);
-	if (tile.collected) {
+	if (tile.collected || !conversionFinished(tile)) {
 		$('#collect-button').hide();
 	}
 	if (!tile.convertAmount || tile.lastHarvest + custom.refineryDuration(level, tile.convertAmount) < now && tile.collected) {
@@ -260,16 +260,14 @@ function updateTrainProgress() {
 	let current = now - tile.lastHarvest; // time passed in seconds since starting training
 	let duration = custom.trainDuration(tile);
 	let progress = current / duration;
-	if (1 || tile.collected) {
-		$('#collect-troops-button').hide();
+	$('#collect-troops-button').hide();
+	if (trainingFinished(tile) && !tile.collected) {
+		$('#collect-troops-button').show();
 	}
-	if (!isTraining(tile)) {
+	if (!isTraining(tile) && tile.collected) {
 		$('#train-progress').hide();
 		$('#train-troops').show();
 		return;
-	}
-	if (trainingFinished(tile) && !tile.collected) {
-		$('#collect-troops-button').show();
 	}
 	$('#train-progress').show();
 	$('#train-troops').hide();
@@ -451,7 +449,7 @@ function tileHtml(id) {
 				}
 			}
 			html += '</ul>';
-			if ([3,4,5,8,11].indexOf(parseInt(tile.building)) > -1) { //if building with levels
+			if ([3,4,5,8,9,11].indexOf(parseInt(tile.building)) > -1) { //if building with levels
 				html += '<button id="levelup-button">Level to ' + (tile.level + 1) + '</button><br>';
 				let cost = World.buildingData[tile.building].cost;
 				html += costHtml(custom.levelUpCost(cost, tile.level + 1));
@@ -883,6 +881,10 @@ function conversionFinished(tile) {
 }
 $('#info-panel').on('click', '#convert-button', function(e) {
 	e.preventDefault();
+	if (Tiles[UI.selectedTile].convertAmount && !Tiles[UI.selectedTile].collected) {
+		addMessage('Refiner busy, try again later', '#f80');
+		return false;
+	}
 	let now = UI.now();
 	let id = $('#convert-id').val();
 	let amount = parseInt($('#convert-amount').val()) || custom.refineryCapacity(Tiles[UI.selectedTile].level);

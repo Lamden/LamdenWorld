@@ -160,6 +160,12 @@ function deductCost($owner, $cost) {
 	}
 	return true;
 }
-
+function clamp($current, $min, $max) {
+    return max($min, min($max, $current));
+}
+function hasResearched($player, $tech) {
+	global $sql;
+	return $sql->s("SELECT COUNT(*) FROM research WHERE owner = '$player' AND id = $tech AND stamp < UNIX_TIMESTAMP() - 30");
+}
 header('Content-Type: text/html; charset=utf-8', TRUE);
 ?>

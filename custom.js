@@ -1,14 +1,25 @@
 custom = {
 	// how many units can fit on <tile> depending on research and if a fort is present
+	// only accurate for active player
 	maxOccupancy(tile) {
 		let value = 5000;
 		if (techHasResearched(7)) {
 			value += 2000;
 		}
+		if (techHasResearched(16)) {
+			value += 4000;
+		}
 		if (tile.owner == Lamden.wallet && tile.building == 15) { // bunker
 			value += 10000;
 		}
 		return value;
+	},
+
+	// calculates move distance for #units
+	moveDistance(num) {
+		let value = clamp(5 - Math.log10(num), 0, 5);
+		value += techHasResearched(8) ? 1 : 0;
+		return Math.ceil(value);
 	},
 
 	// cost to place fortifications on a tile
@@ -18,13 +29,22 @@ custom = {
 
 	// fortification hp
 	fortHP() {
-		return 2000 * (techHasResearched(10) ? 1.1 : 1);
+		return 2000 * (techHasResearched(10) ? 1.3 : 1);
+	},
+	// building hp
+	buildingHP(tile) {
+		if (!tile.building) {
+			return 0;
+		}
+		let hp = World.buildingData[tile.building].hp;
+		hp *= techHasResearched(18) ? 2 : 1;
+		return hp;
 	},
 
 	// takes the base cost to build a building, returns the cost to level said building up to level <level>
 	// level 1 should return base cost
 	levelUpCost(baseCost, level) {
-		cost = {};
+		let cost = {};
 		for (let c in baseCost) {
 			//cost[c] = baseCost[c] * Math.pow(2, level - 1);
 			cost[c] = baseCost[c] * level;

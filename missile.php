@@ -5,6 +5,7 @@ $y = $request->get('y');
 $x2 = $request->get('x2');
 $y2 = $request->get('y2');
 $power = $request->get('power');
+$power *= hasResearched(14) : 1.2 : 1;
 $defender = $sql->get("SELECT * FROM tiles WHERE x = $x2 AND y = $y2");
 if (!$defender) {
 	$defender = array(
@@ -12,6 +13,10 @@ if (!$defender) {
 		'fort' => 0,
 		'numTroops' => 0,
 	);
+}
+if (hasResearched($defender['owner'], 15) && rand(0, 99) < 15) {
+	$power = 0;
+	die('{"error": "Missile missed due to radar obfuscation!"}');
 }
 // army
 if ($defender['numTroops']) {
@@ -49,4 +54,5 @@ if ($defender) {
 	$sql->q("UPDATE tiles SET hp = {$defender['hp']}" . ($defender['hp'] == 0 ? ", building = 0, level = 1, owner = ''" : '') . ", fort = {$defender['fort']} WHERE x = $x2 AND y = $y2");
 }
 $sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2, var3) VALUES ('missile', $x, $y, $x2, $y2, {$defender['numTroops']}, {$defender['hp']}, {$defender['fort']})");
+echo '[]';
 ?>

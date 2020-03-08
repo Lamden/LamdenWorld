@@ -211,7 +211,7 @@ const Lamden = {
 		$.get('./player.php?owner=' + Lamden.wallet, function(e) {
 			console.log(e);
 			data = JSON.parse(e);
-			console.log('Get Player Data: ' + e, data, Object.keys(data).length);
+			//console.log('Get Player Data: ' + e, data, Object.keys(data).length);
 			if (!data.name) {
 				addMessage('Capital not found for player ' + Lamden.wallet); // not an error per se, could be new player
 				return false;
@@ -222,7 +222,7 @@ const Lamden = {
 			Tiles[data.x + ',' + data.y].updated = UI.now();
 			Player.capital = true;
 			$('#actions, #tabs').fadeIn(500);
-			setBuildingData(Tiles['' + data.x + ',' + data.y], 1, Lamden.wallet);
+			//setBuildingData(Tiles['' + data.x + ',' + data.y], 1, Lamden.wallet);
 			camera.target.position = mapPosition(data.x, data.y);
 			for (let i in data.resources) {
 				changePlayerResource(i, data.resources[i]);
@@ -296,6 +296,9 @@ window.setTimeout(function() {
 */
 window.addEventListener('load',function() {
 	Lamden.wallet = prompt('wallet');
+	if (!Lamden.wallet) {
+		Lamden.wallet = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5);
+	}
 	//changePlayerResource(0, 100000);
 	//changePlayerResource(1, 100000);
 	//changePlayerResource(2, 100000);

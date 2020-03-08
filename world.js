@@ -7,7 +7,7 @@ const World = {
 	props: [],
 	random: [.59,.89,.38,.82,.41,.20,.58,.65,.68,.94,.46,.67,.19,.88,.34,.62,.15,.68,.97,.3,.50,.77,.74,.23,.25,.78,.68,.38,.71,.83,.72,.29,.65,.4,.16,.66,.88,.13,.11,.7,.53,.27,.32,.74,.98,.18,.50,.35,.78,.98,.10,.95,.89,.89,.9,.77,.25,.8,.45,.67,.63,.8,.95,.63,.61,.86,.42,.23,.61,.7,.11,.62,.5,.12,.25,.11,.33,.64,.86,.63,.97,.27,.32,.10,.62,.89,.91,.62,.27,.68,.30,.10,.45,.5,.78,.99,.25,.15,.91,.51],
 	buildingData: {
-		1: {name: 'Capital', requiresTile: null, produces: 0, productionSpeed: 1, hp: 1000, mesh: 'Capital', meshScale: .22, description: ''},
+		1: {name: 'Capital', requiresTile: null, produces: 0, productionSpeed: 1, hp: 5000, mesh: 'Capital', meshScale: .22, description: ''},
 //		1: {name: 'Farm', requiresTile: 'grass', produces: 1, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 100}, mesh: 'Farm1'},
 //		2: {name: 'Lumber Camp', requiresTile: 'forest', produces: 2, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 100}},
 		3: {name: 'Ore Mine', requiresTile: 'all', produces: 2, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 200}, icon: 'mine', mesh: 'Mine1', meshScale: .22, description: 'Produces ore'},
@@ -59,18 +59,24 @@ const World = {
 		19: {name: 'Nitrates'},
 	},
 	Technologies: {
-		1: {name: 'Coal', researchedAt: 1, duration: 300, cost: {1: 100, 4: 500}, description: 'Allows building of power plants and unlocks other techs. '},
-		2: {name: 'Oil', researchedAt: 1, requiresTech: 1, duration: 300, cost: {1: 100, 4: 500}, description: 'Allows building of oil wells'},
-		3: {name: 'Armored Vehicles', researchedAt: 10, duration: 300, cost: {1: 100, 4: 500}, description: 'Allows construction of armored vehicles. '},
-		4: {name: 'Ballistics', researchedAt: 10, requiresTech: 3, duration: 300, cost: {1: 100, 4: 500}, description: 'Allows construction of armored vehicles. '},
-		5: {name: 'Scopes', researchedAt: 8, duration: 300, cost: {1: 100, 4: 500}, description: 'Increases your units damage output by 10%'},
-		6: {name: 'Camouflage', researchedAt: 8, duration: 300, cost: {1: 100, 4: 500}, description: 'Increases your units hp by 10%'},
-		7: {name: 'Logistics', researchedAt: 1, duration: 300, cost: {1: 100, 4: 500}, description: 'Increases the maximum number of units per tile by 2000'},
-		8: {name: 'Fuel Efficiency', researchedAt: 1, duration: 300, cost: {1: 100, 4: 500}, description: 'Increases the maximum number of tiles units can move at once by 1. '},
-		9: {name: 'Miniguns', researchedAt: 1, duration: 300, cost: {1: 100, 4: 500}, description: 'Increases damage of fortifications by 10%. '},
-		10: {name: 'Bunkers', researchedAt: 1, duration: 300, cost: {1: 100, 4: 500}, description: 'Increases hp of fortifications by 10%. '},
-		11: {name: 'Economics', researchedAt: 1, duration: 300, cost: {1: 100, 4: 500}, description: 'Allows building of marketplace to trade resources. '},
-		12: {name: 'Pneumatics', researchedAt: 1, duration: 300, cost: {1: 100, 4: 500}, description: 'Increases mining speed of rock mining by 10%. '}
+		1: {name: 'Coal', researchedAt: 1, duration: 300, cost: {1: 1000, 4: 500}, description: 'Allows building of power plants and unlocks other techs. '},
+		2: {name: 'Oil', researchedAt: 1, requiresTech: 1, duration: 300, cost: {1: 1000, 8: 1500}, description: 'Allows building of oil wells'},
+		3: {name: 'Armored Vehicles', researchedAt: 10, duration: 300, cost: {1: 1000, 4: 500}, description: 'Allows construction of armored vehicles. '},
+		4: {name: 'Ballistics', researchedAt: 10, requiresTech: 3, duration: 300, cost: {1: 1000, 4: 1000}, description: 'Allows construction of armored vehicles. '},
+		5: {name: 'Scopes', researchedAt: 8, duration: 300, cost: {1: 1000, 4: 500}, description: 'Increases your units damage output by 10%'},
+		6: {name: 'Tungsten', researchedAt: 8, duration: 300, cost: {1: 1000, 11: 5000}, description: 'Increases your units hp by 10%'},
+		7: {name: 'Logistics', researchedAt: 10, duration: 300, cost: {1: 1000, 4: 500}, description: 'Increases the maximum number of units per tile by 2000'},
+		8: {name: 'Fuel Efficiency', researchedAt: 10, duration: 300, cost: {1: 1000, 12: 1000}, description: 'Increases the maximum number of tiles units can move at once by 1. '},
+		9: {name: 'Miniguns', researchedAt: 10, duration: 300, cost: {1: 1000, 4: 500}, description: 'Increases damage of fortifications by 30%. '},
+		10: {name: 'Rebar', researchedAt: 10, duration: 300, cost: {1: 1000, 11: 5000}, description: 'Increases hp of newly built fortifications by 50%. '},
+		11: {name: 'Economics', researchedAt: 1, duration: 300, cost: {1: 1000, 4: 500}, description: 'Allows building of marketplace to trade resources. '},
+		12: {name: 'Pneumatics', researchedAt: 10, duration: 300, cost: {1: 1000, 4: 500}, description: 'Increases yield rock and ore mining by 10%. '},
+		13: {name: 'Improved Blending', researchedAt: 10, duration: 300, cost: {1: 1000, 14: 1000, 16: 1000}, description: 'Increases refining yield by 10%. '},
+		14: {name: 'Laser Guiding', researchedAt: 10, duration: 300, cost: {1: 1000, 4: 500}, description: 'Increases damage of missiles by 20%. '},
+		15: {name: 'Radar Obfuscation', researchedAt: 10, duration: 300, cost: {1: 1000, 4: 500, 10: 1000}, description: 'Enemy missiles have a 15% chance to miss when targeted at your territory. '},
+		16: {name: 'Logistics II', researchedAt: 1, requiresTech: 7, duration: 300, cost: {1: 1000, 4: 500, 12: 5000}, description: 'Increases the maximum number of units per tile by 4000'},
+		17: {name: 'Improved Blending II ', researchedAt: 10, requiresTech: 13, duration: 300, cost: {1: 1000, 14: 5000, 16: 5000}, description: 'Increases refining yield by 25%. '},
+		18: {name: 'Rebar II', researchedAt: 10, duration: 300, cost: {1: 1000, 11: 5000}, description: 'Increases hp of new buildings by 100%. '},
 	},
 	tileTypes: {
 		'water': {name: 'Water', yield: [0,0,0,0]},
@@ -171,31 +177,6 @@ const World = {
 		}
 		window.setInterval(updateCanvas, 500);
 		window.setTimeout(function() { World.drawWorld(true) }, 500);
-/*
-		Tiles['3,-5'].name = 'Enemy';
-		setBuildingData(Tiles['3,-5'], 0, 'enemy');
-		setBuildingData(Tiles['4,-4'], 7, 'enemy');
-		setBuildingData(Tiles['2,-6'], 7, 'enemy');
-		setBuildingData(Tiles['2,-5'], 9, 'enemy');
-		setBuildingData(Tiles['3,-3'], 11, 'enemy');
-		Tiles['3,-3'].fortification = 2000;
-		setBuildingData(Tiles['2,-7'], 12, 'enemy');
-		setBuildingData(Tiles['3,-6'], 3, 'enemy');
-		setBuildingData(Tiles['4,-6'], 4, 'enemy');
-		setBuildingData(Tiles['4,-5'], 5, 'enemy');
-		setBuildingData(Tiles['5,-4'], 7, 'enemy');
-		setBuildingData(Tiles['1,-5'], 11, 'enemy');
-		setBuildingData(Tiles['4,-3'], 15, 'enemy');
-		setBuildingData(Tiles['4,-7'], 10, 'enemy');
-*/
-//		setBuildingData(Tiles['3,4'], 4, 'enemy');
-//		setBuildingData(Tiles['4,4'], 4, 'enemy');
-//		setBuildingData(Tiles['3,5'], 4, 'enemy');
-
-
-//		addTank(4, -2, '4,-2', 'enemy');
-//		addTank(3, -2, '3,-2', 'enemy');
-//		addTank(2, -3, '2,-3', 'enemy');
 
 		Lamden.getCapital();
 
@@ -263,11 +244,15 @@ const World = {
 							}
 						}
 						if (type == 'build') {
+							if (Tiles[id].mesh) {
+								Tiles[id].mesh.dispose();
+							}
 							setBuildingData(Tiles[id], log[i].var1, Tiles[id].owner,  log[i].var2);
 						}
 						if (type == 'train') {
 							let amount = log[i].var1;
 							Tiles[id].collected = true;
+							Tiles[id].trainAmount = null;
 							if (Tiles[id].unit) {
 								Tiles[id].unit.troops += parseInt(amount);
 								let unitID = Tiles[id].unit.id;
@@ -276,9 +261,13 @@ const World = {
 								if (Tiles[id].building == 8) {
 									addUnit(amount, mapPosition(log[i].x, log[i].y), id, Tiles[id].owner);
 								} else if (Tiles[id].building == 9) {
-									addTank(log[i].x, log[i].y, id, Tiles[id].owner);
+									let tank = addTank(log[i].x, log[i].y, id, Tiles[id].owner);
+									tank.troops = amount;
+									$('#' + tank.id).html(formatName(tank.owner) + '<br>' + tank.troops);
 								} else if (Tiles[id].building == 12) {
-									addShip(log[i].x, log[i].y, id, Tiles[id].owner);
+									let ship = addShip(log[i].x, log[i].y, id, Tiles[id].owner);
+									ship.troops = amount;
+									$('#' + ship.id).html(formatName(ship.owner) + '<br>' + ship.troops);
 								}
 							}
 						}
@@ -287,7 +276,7 @@ const World = {
 								continue;
 							}
 
-							if (Tiles[id2].unit && Tiles[id2].unit.owner == Lamden.wallet) { // merge units
+							if (Tiles[id2].unit && Tiles[id2].unit.owner == Tiles[id].unit.owner) { // merge units
 								let troops = parseInt(Tiles[id].unit.troops);
 								let unitID = Tiles[id].unit.id;
 								$('#' + unitID).remove();
@@ -441,7 +430,9 @@ const World = {
 						}
 					} else if (c[0] > 192) { // forest
 						//addModel(World.assets[Math.random() < .5 ? 'NGon002' : 'NGon003'], pos, v(0,Math.PI / 2,0), .0088);
-						addModel(World.assets[r < .5 ? 'Forest10' : 'Forest10'], pos, v(0,Math.round(r * 6) / 6 * Math.PI * 2 + Math.PI / 2,0), .22);
+						if (!Tiles[id].building) {
+							addModel(World.assets[r < .5 ? 'Forest10' : 'Forest10'], pos, v(0,Math.round(r * 6) / 6 * Math.PI * 2 + Math.PI / 2,0), .22);
+						}
 						if (0 && !scene.getMeshByName('Forest' + x + ',' + y)) {
 							let forest = World.assets[Math.random() < .5 ? 'Forest3' : 'Forest3'].createInstance('Forest' + x + ',' + y);
 							forest.position = mapPosition(x, y);
@@ -560,6 +551,8 @@ function addBuilding(tile) {
 	}
 
 }
+
+// looks to be deprecated soon
 function addNamePlate(pos, text, c, size) {
 	const nameplate = new BABYLON.Mesh.CreatePlane('nameplate', size, scene);
 	nameplate.position = pos.add(v(0, size, 0));
@@ -734,7 +727,11 @@ function battle(a, b, aRemain, bRemain) {
 				$('#info-panel').hide();
 				UI.unitSelect.position = v(0,-10,0);
 			}
+			let id = a.id;
+			$('#' + id).remove();
+			Tiles[a.tileID].unit = null;
 			a.dispose();
+
 		},1000);
 	}
 	if (b.troops <= 0) {
@@ -745,6 +742,9 @@ function battle(a, b, aRemain, bRemain) {
 				$('#info-panel').hide();
 				UI.unitSelect.position = v(0,-10,0);
 			}
+			let id = b.id;
+			$('#' + id).remove();
+			Tiles[b.tileID].unit = null;
 			b.dispose();
 		}, 1000);
 	}
@@ -875,10 +875,12 @@ function fireMissile(source, target, troopRemain, hpRemain, fortRemain) {
 //			let damage = Math.random() * power;
 //			console.log(damage);
 			if (target.unit && troopRemain) {
-				target.unit.troopRemain = troopRemain;
+				target.unit.troops = troopRemain;
+				$('#' + target.unit.id).html(formatName(target.unit.owner) + '<br>' + target.unit.troops);
 			}
 			if (target.unit && !troopRemain) {
 				target.unit.dispose();
+				$('#' + target.unit.id).remove();
 				target.unit = null;
 			}
 			if (target.fortification && fortRemain) {
@@ -896,6 +898,7 @@ function fireMissile(source, target, troopRemain, hpRemain, fortRemain) {
 				target.currentHP = 0;
 				target.maxHP = 0;
 				target.building = 0;
+				shadowRenderList.splice(shadowRenderList.indexOf(target.mesh), 1);
 				target.mesh.dispose();
 				target.mesh = null;
 				target.owner = null;

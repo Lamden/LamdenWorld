@@ -10,7 +10,7 @@ $attacker = $sql->get("SELECT numTroops, troopOwner FROM tiles WHERE x = $x AND 
 $defender = $sql->get("SELECT * FROM tiles WHERE x = $x2 AND y = $y2");
 $battle = false;
 $siege = false;
-
+//var_dump($sql->s("SEL/ECT amount FROM resources WHERE owner = '{$attacker['troopOwner']}' AND resource = 0"));
 if (!deductCost($attacker['troopOwner'], $cost)) {
 	die('{"error": "Not enough resources"}');
 }
@@ -62,7 +62,7 @@ if ($defender) { // existing tile
 		$battle = true;
 		$siege = true;
 		$aPower = $attacker['numTroops'] * (hasResearched($attacker['troopOwner'], 5) ? 1.1 : 1) * (hasResearched($defender['troopOwner'], 10) ? .9 : 1);
-		$dPower = 2000 * (hasResearched($attacker['troopOwner'], 9) ? 1.1 : 1) * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
+		$dPower = 100 * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
 /*		if ($defender['hp'] > $attacker['numTroops']) { // defender stronger
 			$attacker['numTroops'] -= $attacker['numTroops'] > 100 ? 100 : $attacker['numTroops'];
 			$defender['hp'] -= $attacker['numTroops'];
@@ -85,7 +85,7 @@ if ($defender) { // existing tile
 			$sql->q("UPDATE tiles SET numTroops = numTroops + {$attacker['numTroops']} WHERE x = $x2 AND y = $y2");
 			$sql->q("INSERT INTO log (type, x, y, x2, y2) VALUES ('move', $x, $y, $x2, $y2)");
 		} else { // move
-			$sql->q("UPDATE tiles SET numTroops = {$attacker['numTroops']}, troopOwner = '{$attacker['troopOwner']}' WHERE x = $x2 AND y = $y2");
+			$sql->q("UPDATE tiles SET numTroops = {$attacker['numTroops']}, " . ($defender['owner'] != $attacker['troopOwner'] ? "owner = '', " : '') . " troopOwner = '{$attacker['troopOwner']}' WHERE x = $x2 AND y = $y2");
 			$sql->q("INSERT INTO log (type, x, y, x2, y2) VALUES ('move', $x, $y, $x2, $y2)");
 		}
 	}

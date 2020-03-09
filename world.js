@@ -34,7 +34,15 @@ const World = {
 		5: {name: 'Refine Fossil Fuel to Coal', requiresLevel: 1, consumes: 3, produces: 7, speed: 1, capacity: 100},
 		6: {name: 'Extract Gunpowder from Rock', requiresLevel: 1, consumes: 1, produces: 9, speed: 1, capacity: 100},
 		7: {name: 'Extract Silicon from Rock', requiresLevel: 1, consumes: 1, produces: 10, speed: 1, capacity: 100},
-		8: {name: 'Smelt Raw Ore to Steel', requiresLevel: 2, consumes: 2, produces: 11, speed: 1, capacity: 100},
+		8: {name: 'Smelt Ore to Steel', requiresLevel: 2, consumes: 2, produces: 11, speed: 1, capacity: 100},
+		9: {name: 'Refine Fossil Fuel to Plastic', requiresLevel: 2, consumes: 3, produces: 16, speed: 1, capacity: 100},
+		10: {name: 'Extract Rubber from Rock', requiresLevel: 2, consumes: 1, produces: 13, speed: 1, capacity: 100},
+		11: {name: 'Refine Ore to Alloy', requiresLevel: 3, consumes: 2, produces: 14, speed: 1, capacity: 100},
+		12: {name: 'Refine Fossil Fuel to Kerosene', requiresLevel: 3, consumes: 3, produces: 15, speed: 1, capacity: 100},
+		//13: {name: 'Extract Metals from Rock', requiresLevel: 3, consumes: 1, produces: 13, speed: 1, capacity: 100},
+		14: {name: 'Smelt Ore to Uranium', requiresLevel: 4, consumes: 2, produces: 17, speed: 1, capacity: 100},
+		15: {name: 'Refine Fossil Fuel to Hydrazine', requiresLevel: 4, consumes: 3, produces: 18, speed: 1, capacity: 100},
+		16: {name: 'Extract Nitrates from Rock', requiresLevel: 4, consumes: 1, produces: 19, speed: 1, capacity: 100},
 	},
 	Resources: {
 		0: {name: 'Energy'},
@@ -803,13 +811,18 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 		}
 	}
 	if (a.troops <= 0) {
-		World.units.splice(World.units.indexOf(a), 1);
-		if (UI.selectedUnit == a) {
-			UI.selectedUnit = null;
-			$('#info-panel').hide();
-			UI.unitSelect.position = v(0,-10,0);
-		}
-		a.dispose();
+		window.setTimeout(function() {
+			World.units.splice(World.units.indexOf(a), 1);
+			if (UI.selectedUnit == a) {
+				UI.selectedUnit = null;
+				$('#info-panel').hide();
+				UI.unitSelect.position = v(0,-10,0);
+			}
+			let id = a.id;
+			$('#' + id).remove();
+			Tiles[a.tileID].unit = null;
+			a.dispose();
+		}, 2000);
 	}
 	if (b.fortification <= 0 && b.fortMesh) {
 		addMessage('Fortification destroyed [' + b.x + ',' + b.y + ']');

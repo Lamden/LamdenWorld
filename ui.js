@@ -153,7 +153,7 @@ canvas.addEventListener('mousemove', (e) => {
 			let unitPos = v(Tiles[UI.selectedUnit.tileID].x, Tiles[UI.selectedUnit.tileID].y);
 			let tilePos = v(Tiles[id].x, Tiles[id].y);
 			let d = World.offset_distance(unitPos, tilePos);
-			if (d <= 3) {
+			if (d <= custom.moveDistance(UI.selectedUnit.troops)) {
 				html += d + ' tiles away. Costs ' + (d * UI.selectedUnit.troops) + ' energy to move here; right-click to move to this tile. ';
 			} else {
 				html += 'Too far away to move here';
@@ -481,7 +481,9 @@ function tileHtml(id) {
 			html += '<form id="conversion-form">';
 			html += '<select id="convert-id">';
 			for (let c in World.Conversions) {
-				html += '<option value="' + c + '">' + World.Conversions[c].name + '</option>';
+				if (tile.level >= World.Conversions[c].requiresLevel) {
+					html += '<option value="' + c + '">' + World.Conversions[c].name + '</option>';
+				}
 			}
 			html += '</select>';
 			html += '<input id="convert-amount" type="text">';
@@ -520,7 +522,7 @@ function tileHtml(id) {
 			html += '<label>Payload</label> ';
 			html += '<input id="missile-power" type="text" value="1000"> tonnes TnT';
 			html += '<button id="missile-button">Launch Missile</button><br>';
-			html += '10,000 Energy, <span id="missile-cost">1000</span> Uranium';
+			html += '10,000 Energy, <span id="missile-cost">2000</span> Uranium';
 		}
 	}
 	$('#info-panel').html(html).show();
@@ -556,7 +558,7 @@ $('#info-panel').on('keyup keypress', '#missile-power', function(e) {
 	if (!val || val <= 0) {
 		val = 0;
 	}
-	$('#missile-cost').html(val);
+	$('#missile-cost').html(val + 1000);
 });
 
 window.addEventListener('keydown', (e) => {
@@ -681,6 +683,12 @@ canvas.addEventListener('contextmenu', () => {
 		return;
 	}
 
+	if (Tiles[id].unit && Tiles[id].unit.owner == Lamden.wallet && custom.maxOccupancy(Tiles[id]) < UI.selectedUnit.troops + Tiles[id].unit.troops) {
+		World.Sounds[randomArray(['negative1','negative2'])].play();
+		addMessage('Cannot merge, too many troops for destination tile. ', '#f80');
+		return;
+	}
+
 	if (!deductCost({0:UI.selectedUnit.troops})) {
 		return false;
 	}
@@ -752,6 +760,10 @@ function moveUnit(a, b) {
 	unit.target = mapPosition(b.x, b.y);
 	unit.tileID = b.x + ',' + b.y;
 	unit.ready = UI.now() + 30;
+	if (b.owner && !b.currentHP) {
+		b.owner = '';
+		World.drawWorld(true);
+	}
 	if (unit.mesh) {
 		scene.beginAnimation(unit.mesh, 51, 80, true, 1);
 	}

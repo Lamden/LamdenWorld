@@ -14,6 +14,9 @@ $siege = false;
 if (!deductCost($attacker['troopOwner'], $cost)) {
 	die('{"error": "Not enough resources"}');
 }
+if ($x == $x2 && $y == $y2) {
+	die('{"error": "Same tile"}');
+}
 
 if ($defender) { // existing tile
 	// battle

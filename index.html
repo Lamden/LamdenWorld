@@ -286,6 +286,11 @@ const Lamden = {
 			console.log('Get Player: ' + e);
 			Lamden.Players[address] = JSON.parse(e.value);
 		});
+	},
+	getPlayers() {
+		$.get('./players.php', function() {
+
+		});
 	}
 }
 /*

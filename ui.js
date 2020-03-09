@@ -315,6 +315,11 @@ canvas.addEventListener('click', () => {
 	if (mesh.type == 'unit') { // unit info panel
 		UI.selectedUnit = mesh;
 		UI.unitSelect.material.diffuseColor = mesh.owner == Lamden.wallet ? color(0,1,0) : color(1,0,0);
+		if (mesh.owner == Lamden.wallet) {
+			World.Sounds[randomArray(['unit1', 'unit2','unit3'])].play();
+		} else {
+			World.Sounds[randomArray(['enemy1','enemy2'])].play();
+		}
 		html = '<h1>' + mesh.name + '</h1>';
 		html += '<p>Owner: ' + (Lamden.Players[mesh.owner] ? Lamden.Players[mesh.owner].name : mesh.owner) + '</p>';
 		html += '<p>Troops: <span id="num-troops">' + mesh.troops + '</span></p>';
@@ -334,7 +339,9 @@ canvas.addEventListener('click', () => {
 	}
 
 	UI.tileSelect.position = mapPosition(tile.x, tile.y).add(v(0,.09,0));
-
+	if (!UI.mesh) {
+		World.Sounds.tick2.play();
+	}
 	let id = (tile.x) + ',' + (tile.y);
 	UI.selectedTile = id;
 	UI.x = tile.x;
@@ -636,20 +643,26 @@ canvas.addEventListener('contextmenu', () => {
 		return false;
 	}
 	if (UI.selectedUnit.target) {
+		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Unit still underway, wait until arrival', '#f88');
 		return false;
 	}
 	let now = UI.now();
 	if (UI.selectedUnit.ready > now) {
+		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Unit still cooling down, wait until cooldown complete', '#f88');
 		return false;
 	}
-
+	if (id == UI.selectedUnit.tileID) {
+		return;
+	}
 	if (UI.selectedUnit.name == 'Ship' && Tiles[id].type != 'water') {
+		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Cannot move ship on land', '#f88');
 		return;
 	}
 	if (UI.selectedUnit.name != 'Ship' && Tiles[id].type == 'water') {
+		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Cannot move unit on water', '#f88');
 		return;
 	}
@@ -657,18 +670,21 @@ canvas.addEventListener('contextmenu', () => {
 	let a = v(tile.x, tile.y);
 	let b = v(Tiles[UI.selectedUnit.tileID].x, Tiles[UI.selectedUnit.tileID].y);
 	if (World.offset_distance(a, b) > custom.moveDistance(UI.selectedUnit.troops)) {
-		addMessage('Too far', '#f80');
+		World.Sounds[randomArray(['negative1','negative2'])].play();
+		addMessage('Too far for this amount of units', '#f80');
 		return;
 	}
 
 	if (custom.maxOccupancy(Tiles[id]) < UI.selectedUnit.troops) {
+		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Too many troops for destination tile. ', '#f80');
-		die();
+		return;
 	}
 
 	if (!deductCost({0:UI.selectedUnit.troops})) {
 		return false;
 	}
+	World.Sounds[randomArray(['confirm1','confirm2'])].play();
 	$.post('./move.php', {
 		x: Tiles[UI.selectedUnit.tileID].x,
 		y: Tiles[UI.selectedUnit.tileID].y,
@@ -805,23 +821,33 @@ function placeBuilding() {
 		return false;
 	}
 
+	if (Tiles[UI.x + ',' + UI.y].owner != Lamden.wallet) {
+		addMessage('Tile not colonized by you', '#f88');
+		World.Sounds.tick1.play();
+		return false;
+	}
 	if (Tiles[UI.x + ',' + UI.y].building) {
 		addMessage('Tile already occupied', '#f88');
+		World.Sounds.tick1.play();
 		return false;
 	}
 	if (!deductCost(World.buildingData[id].cost)) {
+		World.Sounds.tick1.play();
 		return false;
 	}
 
 	if (id == 12 && Tiles[UI.x + ',' + UI.y].type != 'water') {
 		addMessage('Must be placed on water', '#f88');
+		World.Sounds.tick1.play();
 		return false;
 	}
 	if (id != 12 && Tiles[UI.x + ',' + UI.y].type == 'water') {
 		addMessage('Cannot be placed on water', '#f88');
+		World.Sounds.tick1.play();
 		return false;
 	}
 
+	World.Sounds.tick2.play();
 	$.post('./build.php', {x: UI.x, y: UI.y, id: id, cost: World.buildingData[id].cost}, function(e) {
 		console.log(e);
 		let data = JSON.parse(e);

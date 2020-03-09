@@ -15,7 +15,7 @@ $hp = 1000;
 if ($id == 15) { // bunker
 	$hp = 5000;
 }
-if (hasResearched(18)) {
+if (hasResearched($tile['owner'], 18)) {
 	$hp *= 2;
 }
 $sql->q("UPDATE tiles SET building = $id, hp = $hp, lastHarvest = UNIX_TIMESTAMP() WHERE x = $x AND y = $y");

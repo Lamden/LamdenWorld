@@ -7,7 +7,7 @@ const World = {
 	props: [],
 	random: [.59,.89,.38,.82,.41,.20,.58,.65,.68,.94,.46,.67,.19,.88,.34,.62,.15,.68,.97,.3,.50,.77,.74,.23,.25,.78,.68,.38,.71,.83,.72,.29,.65,.4,.16,.66,.88,.13,.11,.7,.53,.27,.32,.74,.98,.18,.50,.35,.78,.98,.10,.95,.89,.89,.9,.77,.25,.8,.45,.67,.63,.8,.95,.63,.61,.86,.42,.23,.61,.7,.11,.62,.5,.12,.25,.11,.33,.64,.86,.63,.97,.27,.32,.10,.62,.89,.91,.62,.27,.68,.30,.10,.45,.5,.78,.99,.25,.15,.91,.51],
 	buildingData: {
-		1: {name: 'Capital', requiresTile: null, produces: 0, productionSpeed: 1, hp: 5000, mesh: 'Capital', meshScale: .22, description: ''},
+		1: {name: 'Capital', requiresTile: null, produces: 0, productionSpeed: 1, hp: 5000, cost: {7: 300, 11: 500}, mesh: 'Capital', meshScale: .22, description: ''},
 //		1: {name: 'Farm', requiresTile: 'grass', produces: 1, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 100}, mesh: 'Farm1'},
 //		2: {name: 'Lumber Camp', requiresTile: 'forest', produces: 2, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 100}},
 		3: {name: 'Ore Mine', requiresTile: 'all', produces: 2, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 200}, icon: 'mine', mesh: 'Mine1', meshScale: .22, description: 'Produces ore'},
@@ -35,7 +35,7 @@ const World = {
 		6: {name: 'Extract Gunpowder from Rock', requiresLevel: 1, consumes: 1, produces: 9, speed: 1, capacity: 100},
 		7: {name: 'Extract Silicon from Rock', requiresLevel: 1, consumes: 1, produces: 10, speed: 1, capacity: 100},
 		8: {name: 'Smelt Ore to Steel', requiresLevel: 2, consumes: 2, produces: 11, speed: 1, capacity: 100},
-		9: {name: 'Refine Fossil Fuel to Plastic', requiresLevel: 2, consumes: 3, produces: 16, speed: 1, capacity: 100},
+		9: {name: 'Refine Fossil Fuel to Petroleum', requiresLevel: 2, consumes: 3, produces: 12, speed: 1, capacity: 100},
 		10: {name: 'Extract Rubber from Rock', requiresLevel: 2, consumes: 1, produces: 13, speed: 1, capacity: 100},
 		11: {name: 'Refine Ore to Alloy', requiresLevel: 3, consumes: 2, produces: 14, speed: 1, capacity: 100},
 		12: {name: 'Refine Fossil Fuel to Kerosene', requiresLevel: 3, consumes: 3, produces: 15, speed: 1, capacity: 100},
@@ -649,6 +649,16 @@ function addUnit(num, pos, tile, owner) {
 	Tiles[tile].unit = unit;
 	unit.id = 'u' + Math.round(Math.random() * 9999);
 	World.units.push(unit);
+	unit.shoot = function() {
+		let sound = World.Sounds['gun' + Math.ceil(Math.random() * 2)];
+		sound.maxDistance = 300;
+		sound.attachToMesh(unit);
+		console.log(sound);
+		sound.play();
+	}
+	unit.death = function() {
+		scene.beginAnimation(u, 493, 545, false, 1);
+	}
 	$('#labels').append('<div id="' + unit.id + '" style="color: ' + (unit.owner == Lamden.wallet ? '#0f0' : '#f88') + '">' + formatName(unit.owner) + '<br>' + unit.troops + '</div>');
 	return unit;
 }
@@ -673,13 +683,16 @@ function addTank(x, y, id, owner) {
 	Tiles[id].unit = tank;
 	shadowRenderList.push(base);
 	tank.id = 'u' + Math.round(Math.random() * 9999);
+	tank.shoot = function() {
+		World.Sounds['explosion' + Math.ceil(Math.random() * 6)].play();
+	}
 	World.units.push(tank);
 	$('#labels').append('<div id="' + tank.id + '" style="color: ' + (tank.owner == Lamden.wallet ? '#0f0' : '#f88') + '">' + tank.owner + '<br>' + tank.troops + '</div>');
 	return tank;
 }
 function addShip(x, y, id, owner) {
 	let ship = new BABYLON.Mesh('Ship', scene); // base mesh
-	let base = World.assets['Battleship'].clone('Ship');
+	let base = World.assets['Battleship2'].clone('Ship');
 	base.position = v(0,0,0);
 	base.scaling = v(1,1,1).scaleInPlace(.3);
 	base.parent = ship;
@@ -696,8 +709,11 @@ function addShip(x, y, id, owner) {
 	ship.owner = owner;
 	ship.ready = Math.round((new Date()).getTime() / 1000) + 5;
 	Tiles[id].unit = ship;
-	shadowRenderList.push(ship);
+	shadowRenderList.push(base);
 	ship.id = 'u' + Math.round(Math.random() * 9999);
+	ship.shoot = function() {
+		World.Sounds['explosion' + Math.ceil(Math.random() * 6)].play();
+	}
 	World.units.push(ship);
 	$('#labels').append('<div id="' + ship.id + '" style="color: ' + (ship.owner == Lamden.wallet ? '#0f0' : '#f88') + '">' + ship.owner + '<br><span style="font-size: 120%; ">' + ship.troops + '</span></div>');
 	return ship;
@@ -721,8 +737,11 @@ function battle(a, b, aRemain, bRemain) {
 	//var power2 = Math.round(Math.random() * a.troops * (techHasResearched(5) ? 1.1 : 1));
 	//b.troops -= power2;
 	b.troops = bRemain;
-	$('#' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
+	b.shoot();
 	a.troops = aRemain;
+	a.shoot();
+
+	$('#' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
 	$('#' + b.id).html(formatName(b.owner) + '<br>' + b.troops);
 
 	let explosion1 = particles(b, 'explosion');
@@ -749,6 +768,9 @@ function battle(a, b, aRemain, bRemain) {
 		$('#info-panel #num-troops').html(b.troops);
 	}
 	if (a.troops <= 0) {
+		if (a.death) {
+			a.death();
+		}
 		window.setTimeout(function() {
 			World.units.splice(World.units.indexOf(a), 1);
 			if (UI.selectedUnit == a) {
@@ -759,11 +781,18 @@ function battle(a, b, aRemain, bRemain) {
 			let id = a.id;
 			$('#' + id).remove();
 			Tiles[a.tileID].unit = null;
-			a.dispose();
+			if (a.mesh) {
+				a.type = null;
+			} else {
+				a.dispose();
+			}
 
 		},1000);
 	}
 	if (b.troops <= 0) {
+		if (b.death) {
+			b.death();
+		}
 		window.setTimeout(function() {
 			World.units.splice(World.units.indexOf(b), 1);
 			if (UI.selectedUnit == b) {
@@ -774,7 +803,11 @@ function battle(a, b, aRemain, bRemain) {
 			let id = b.id;
 			$('#' + id).remove();
 			Tiles[b.tileID].unit = null;
-			b.dispose();
+			if (b.mesh) {
+				b.type = null;
+			} else {
+				b.dispose();
+			}
 		}, 1000);
 	}
 	addMessage('Attacker left: ' + a.troops + ', defender left: ' + b.troops , '#fff');
@@ -811,6 +844,9 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 		}
 	}
 	if (a.troops <= 0) {
+		if (a.death) {
+			a.death();
+		}
 		window.setTimeout(function() {
 			World.units.splice(World.units.indexOf(a), 1);
 			if (UI.selectedUnit == a) {
@@ -821,7 +857,11 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 			let id = a.id;
 			$('#' + id).remove();
 			Tiles[a.tileID].unit = null;
-			a.dispose();
+			if (a.mesh) {
+				a.type = null;
+			} else {
+				a.dispose();
+			}
 		}, 2000);
 	}
 	if (b.fortification <= 0 && b.fortMesh) {

@@ -437,7 +437,10 @@ function tileHtml(id) {
 			html += '<dt>Mining<dt><dd>' + World.Resources[data.produces].name + '</dd>';
 			html += '<dt>Yield Multiplier<dt><dd>' + custom.yieldMultiplier(tile) + '</dd>';
 			html += '<dt>Capacity<dt><dd>' + custom.mineCapacity(tile.level) + '</dd>';
-			html += '<button id="harvest-button">Harvest</button><br>Current Yield: '
+			html += '</dl>';
+			html += '<button id="harvest-button">Harvest</button><br>';
+			html += 'Current Yield: '
+			html += '<img src="icons/ingot.png" style="width: 16px; height: 16px; ">';
 			html += custom.calcYield(tile) + ' ' + World.Resources[data.produces].name;
 			if ([3,4,5].indexOf(parseInt(tile.building)) > -1) {
 				html += '<h2>Switch Resource</h2>';
@@ -460,7 +463,7 @@ function tileHtml(id) {
 				}
 			}
 			html += '</ul>';
-			if ([3,4,5,8,9,11].indexOf(parseInt(tile.building)) > -1) { //if building with levels
+			if ([1,3,4,5,7,8,9,11,12].indexOf(parseInt(tile.building)) > -1) { //if building with levels
 				html += '<button id="levelup-button">Level to ' + (tile.level + 1) + '</button><br>';
 				let cost = World.buildingData[tile.building].cost;
 				html += costHtml(custom.levelUpCost(cost, tile.level + 1));
@@ -486,7 +489,7 @@ function tileHtml(id) {
 				}
 			}
 			html += '</select>';
-			html += '<input id="convert-amount" type="text">';
+			html += '<input id="convert-amount" type="text" value="' + custom.refineryCapacity(tile.level) + '">';
 			html += '<button id="convert-button">Convert</button>';
 			html += '';
 			html += '</form>';
@@ -1136,7 +1139,8 @@ function changePlayerResource(id, amount) {
 function costHtml(cost) {
 	let html = '';
 	for (let c in cost) {
-		html += World.Resources[c].name + ': ' + cost[c] + ' ';
+		html += '<img src="icons/ingot.png" style="width: 16px; height: 16px; ">';
+		html += World.Resources[c].name + ': ' + cost[c] + ', ';
 	}
 	return html;
 }
@@ -1313,18 +1317,17 @@ $('#info-panel').on('click', '#techs a', function(e) {
 	let id = $(e.target.parentNode).attr('data-id') || $(e.target).attr('data-id');
 	if (isResearching(Tiles[UI.selectedTile].building)) {
 		addMessage('Already researching, wait until finished', '#f88');
+		World.Sounds.tick1.play();
 		return false;
 	}
 	let tech = World.Technologies[id];
 	if (!deductCost(tech.cost)) {
+		World.Sounds.tick1.play();
 		return false;
-	}
-	if (isResearching(Tiles[UI.selectedTile].building)) {
-		addMesesage('Already researching', '#f88');
-		return;
 	}
 	tech.started = UI.now();
 	tileHtml(UI.selectedTile);
+	World.Sounds.tick2.play();
 	$.post('./research.php', {owner: Lamden.wallet, id: id, cost: tech.cost}, function(e) {
 		console.log(e);
 		let data = JSON.parse(e);

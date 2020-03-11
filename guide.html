@@ -23,11 +23,11 @@ img.right { float: right; width: 40%; }
 <p></p>
 <h2>Begin</h2>
 <p>
-	You start with a town center on a tile. You need resources to do things in the game, the main one being Energy.
+	You start with a capital on a tile. You need resources to do things in the game, the main one being Energy.
 </p>
-<img class="left" src="images/energy1.jpg"><h2>Energy</h2>
+<h2>Energy</h2>
 <p>
-	Energy is mainly produced in your capital. It has be be harvested from time to time to avail it.
+	Energy is mainly produced in your capital. It has be be harvested from time to time to use it.
 	To increase your rate of energy generation, you can either level up your capital, or create power plants,
 	however the latter produce energy at a much slower speed than your capital.
 </p>
@@ -50,7 +50,7 @@ img.right { float: right; width: 40%; }
 </p>
 
 <p><img class="right" src="images/miningrate.jpg">
-	After building the mine, the speed of gathering depends on a number of multipliers:
+	After building a mine, the speed of gathering depends on a number of multipliers:
 </p>
 <ul>
 	<li>The kind of tile, different kinds of tiles produce different amounts of different resources. </li>
@@ -126,11 +126,13 @@ img.right { float: right; width: 40%; }
 	moving, triggers a cooldown which must be finished before you can do anything else with the units again.
 </p>
 <p>
-	To move units, select them, then right-click any tile within moving distance (3 or more depending on
-	technologies researched). You can move units to a tile which already contains some of your units. This
+	To move units, select them, then right-click any tile within moving distance. Moving distance depends on
+	how many troops you are trying to move at once (more troops have more limited moving distance, and technologies
+	reseached. You can move units to a tile which already contains some of your units. This
 	will merge the units together, making one larger army on the tile. You cannot move your units on tiles
 	which are occupied by enemy units or enemy territory. Trying to move units to a tile occupied by the enemy
-	is considered attacking those units/territory.
+	is considered attacking those units/territory. Only if an enemy tile is unoccupied can you move on it,
+	which releases the ownership.
 </p>
 <h2>Units v units Battle</h2>
 <p>
@@ -147,6 +149,13 @@ img.right { float: right; width: 40%; }
 	expensive), click <a class="ingame">Launch Missile</a>, then <b>right-click</b>
 	any neighboring tile within a 5 tile radius to target it.
 </p>
+<h2>Tips and Tricks</h2>
+<ul>
+	<li>Depending on starting resources, you may want to levelup your capital asap, as energy will definity
+	be the most sought after resource when the initial stash has been depleted, and the capital is the most
+	efficient at generating it. </li>
+	<li>Next, you'll want several higher level refineries as refining takes relatively more time than mining.</li>
 
+</ul>
 </main>
 </body>

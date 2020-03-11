@@ -154,7 +154,7 @@ canvas.addEventListener('mousemove', (e) => {
 			let tilePos = v(Tiles[id].x, Tiles[id].y);
 			let d = World.offset_distance(unitPos, tilePos);
 			if (d <= custom.moveDistance(UI.selectedUnit.troops)) {
-				html += d + ' tiles away. Costs ' + (d * UI.selectedUnit.troops) + ' energy to move here; right-click to move to this tile. ';
+				html += d + ' tiles away. Costs ' + Math.ceil(d * UI.selectedUnit.troops * (techHasResearched(19) ? .5 : 1)) + ' energy to move here; right-click to move to this tile. ';
 			} else {
 				html += 'Too far away to move here';
 			}
@@ -323,8 +323,8 @@ canvas.addEventListener('click', () => {
 		html = '<h1>' + mesh.name + '</h1>';
 		html += '<p>Owner: ' + (Lamden.Players[mesh.owner] ? Lamden.Players[mesh.owner].name : mesh.owner) + '</p>';
 		html += '<p>Troops: <span id="num-troops">' + mesh.troops + '</span></p>';
-		html += '<p>Maximum move distance: ' + custom.moveDistance(mesh.troops) + '</p>';
 		if (mesh.owner == Lamden.wallet) {
+			html += '<p>Maximum move distance: ' + custom.moveDistance(mesh.troops) + '</p>';
 			let now = UI.now();
 			if (mesh.ready > now) {
 				let diff = mesh.ready - now;
@@ -332,6 +332,19 @@ canvas.addEventListener('click', () => {
 				html += '<p>Unit still cooling down before next action can be performed. </p>';
 			} else {
 				html += '<p>Right-click on a tile to move there</p>';
+			}
+
+			if (techHasResearched(5)) {
+				html += '<p style="color: #8f8; ">+10% damage</p>';
+			}
+			if (techHasResearched(6)) {
+				html += '<p style="color: #8f8; ">+10% hp</p>';
+			}
+			if (techHasResearched(8)) {
+				html += '<p style="color: #8f8; ">+1 tile max move</p>';
+			}
+			if (techHasResearched(19)) {
+				html += '<p style="color: #8f8; ">-50% energy cost to move or attack</p>';
 			}
 		}
 		$('#info-panel').html(html).show();
@@ -420,7 +433,7 @@ function tileHtml(id) {
 		html += '</div>';
 		html += '<div id="research-progress" style="display: ' + (isResearching(Tiles[UI.selectedTile].building) ? 'block' : 'none') + '; ">Researching ';
 		if (isResearching(Tiles[UI.selectedTile].building)) {
-			let name = World.Technologies[isResearching(Tiles[UI.selectedTile].building)];
+			let name = World.Technologies[isResearching(Tiles[UI.selectedTile].building)].name;
 			html += name;
 		}
 		html += '<progress max="100"></progress>';
@@ -436,7 +449,7 @@ function tileHtml(id) {
 			html += '<dl>';
 			html += '<dt>Mining<dt><dd>' + World.Resources[data.produces].name + '</dd>';
 			html += '<dt>Yield Multiplier<dt><dd>' + custom.yieldMultiplier(tile) + '</dd>';
-			html += '<dt>Capacity<dt><dd>' + custom.mineCapacity(tile.level) + '</dd>';
+			html += '<dt>Capacity<dt><dd style="color: ' + (techHasResearched(20) ? '#8f8' : '#fff') + '">' + custom.mineCapacity(tile.level) + '</dd>';
 			html += '</dl>';
 			html += '<button id="harvest-button">Harvest</button><br>';
 			html += 'Current Yield: '
@@ -476,10 +489,28 @@ function tileHtml(id) {
 			let capacity = custom.refineryCapacity(tile.level);
 			html += '<dt>Capacity</dt><dd>' + capacity + '</dd>';
 			html += '<dt>Time to Capacity</dt><dd>' + custom.refineryDuration(tile.level) + '</dd>';
+			if (techHasResearched(13)) {
+				if (techHasResearched(17)) {
+					html += '<dt>Bonus Yield</dt><dd style="color: #8f8">37.5%</dd>';
+				} else {
+					html += '<dt>Bonus Yield</dt><dd style="color: #8f8">10%</dd>';
+				}
+			}
 			html += '</dl>';
 			html += '<div id="conversion-progress" style="display: none; ">Refining';
+			if (tile.convertID) {
+				let produces = World.Conversions[tile.convertID].produces;
+				let amount = tile.convertAmount;
+				console.log(produces, amount, World.Resources[produces].name);
+				refining = {};
+				refining[produces] = amount;
+				html += costHtml(refining);
+			}
 			html += '<progress max="100"></progress>';
 			html += '<button id="collect-button">Collect</button>';
+			if (tile.convertID) {
+				html += '<br>' + costHtml(refining);
+			}
 			html += '</div>';
 			html += '<form id="conversion-form">';
 			html += '<select id="convert-id">';
@@ -491,7 +522,6 @@ function tileHtml(id) {
 			html += '</select>';
 			html += '<input id="convert-amount" type="text" value="' + custom.refineryCapacity(tile.level) + '">';
 			html += '<button id="convert-button">Convert</button>';
-			html += '';
 			html += '</form>';
 		}
 		if ([8,9,12].indexOf(tile.building) > -1) {
@@ -617,9 +647,11 @@ canvas.addEventListener('contextmenu', () => {
 		// get power
 		if (!val || val <= 0) {
 			addMessage('Enter a positive value for power');
+			World.Sounds.tick1.play();
 			return false;
 		}
 		if (!deductCost(custom.missileCost(val))) {
+			World.Sounds.tick1.play();
 			return false;
 		}
 		$.post('./missile.php', {
@@ -627,13 +659,14 @@ canvas.addEventListener('contextmenu', () => {
 			y: Tiles[UI.selectedTile].y,
 			x2: tile.x,
 			y2: tile.y,
-			power: val
+			power: val,
+			cost: custom.missileCost(val)
 		}, function(e) {
+			console.log(e);
 			data = JSON.parse(e);
 			if (data.error) {
 				addMessage(data.error, '#f88');
 			}
-			console.log(e);
 		});
 		return;
 		fireMissile(Tiles[UI.selectedTile], Tiles[id], val);
@@ -696,12 +729,18 @@ canvas.addEventListener('contextmenu', () => {
 		return false;
 	}
 	World.Sounds[randomArray(['confirm1','confirm2'])].play();
+
+	let energy = UI.selectedUnit.troops;
+	if (techHasResearched(19)) {
+		energy = Math.ceil(energy * .5);
+	}
+
 	$.post('./move.php', {
 		x: Tiles[UI.selectedUnit.tileID].x,
 		y: Tiles[UI.selectedUnit.tileID].y,
 		x2: Tiles[id].x,
 		y2: Tiles[id].y,
-		cost: {0:UI.selectedUnit.troops},
+		cost: {0:energy},
 	}, function(e) {
 		console.log(e);
 		let data = JSON.parse(e);
@@ -767,8 +806,8 @@ function moveUnit(a, b) {
 		b.owner = '';
 		World.drawWorld(true);
 	}
-	if (unit.mesh) {
-		scene.beginAnimation(unit.mesh, 51, 80, true, 1);
+	if (unit.walk) {
+		unit.walk();
 	}
 }
 function attackUnit(a, b, aRemain, bRemain) {
@@ -793,8 +832,8 @@ scene.registerBeforeRender(function() {
 			$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
 			if (distance(World.units[u].position, World.units[u].target) < .2) {
 				World.units[u].target = null;
-				if (World.units[u].mesh) {
-					scene.beginAnimation(World.units[u].mesh, 0, 50, true, 1);
+				if (World.units[u].idle) {
+					World.units[u].idle();
 				}
 			}
 		}
@@ -912,6 +951,15 @@ $('#info-panel').on('click', '#mine-switch a', function(e) {
 	});
 });
 
+function mineFinished(tile) {
+	if (!tile || [1,3,4,5,7].indexOf(tile.building) == -1) { // check if mine
+		return false;
+	}
+	if (custom.mineCapacity(tile.level) > custom.calcYield(tile)) {
+		return false;
+	}
+	return true;
+}
 $('#info-panel').on('click', '#harvest-button', function() {
 	if (UI.now() - Tiles[UI.selectedTile].lastHarvest < 10) {
 		addMessage('Harvesting too soon, try again later', '#f88');
@@ -925,12 +973,20 @@ $('#info-panel').on('click', '#harvest-button', function() {
 		console.log(e);
 		changePlayerResource(resource, amount);
 		Tiles[UI.selectedTile].lastHarvest = UI.now();
+		if (Tiles[UI.selectedTile].readyMesh) {
+			Tiles[UI.selectedTile].readyMesh.dispose();
+			Tiles[UI.selectedTile].readyMesh = null;
+		}
+		World.Sounds.rock1.play();
 		tileHtml(UI.selectedTile);
 	});
 });
 function conversionFinished(tile) {
 	tile = Tiles[tile];
 	if (!tile || tile.building != 11) { // check if refinery
+		return false;
+	}
+	if (tile.collected) {
 		return false;
 	}
 	let now = UI.now();
@@ -980,6 +1036,9 @@ $('#info-panel').on('click', '#convert-button', function(e) {
 		Tiles[UI.selectedTile].convertID = id;
 		Tiles[UI.selectedTile].convertAmount = amount;
 		Tiles[UI.selectedTile].collected = false;
+		window.setTimeout(function() {
+			tileHtml(UI.selectedTile);
+		},1000);
 	});
 	return false;
 });
@@ -999,12 +1058,20 @@ $('#info-panel').on('click', '#collect-button', function(e) {
 			return false;
 		}
 		Tiles[UI.selectedTile].collected = true;
+		if (Tiles[UI.selectedTile].readyMesh) {
+			Tiles[UI.selectedTile].readyMesh.dispose();
+			Tiles[UI.selectedTile].readyMesh = null;
+		}
+		World.Sounds.rock1.play();
 		changePlayerResource(World.Conversions[id].produces, amount);
 	});
 
 });
 function trainingFinished(tile) {
 	if (!tile || [8,9,12].indexOf(tile.building) == -1) { // check if barracks
+		return false;
+	}
+	if (tile.collected) {
 		return false;
 	}
 	let now = UI.now();
@@ -1020,6 +1087,7 @@ $('#info-panel').on('click', '#train-troops', function(e) {
 	let amount = custom.trainCapacity(Tiles[UI.selectedTile]);
 	cost = {0:amount};
 	if (!deductCost(cost)) {
+		World.Sounds.tick1.play();
 		return false;
 	}
 	$.post('./train.php', {x: UI.x, y: UI.y, amount: amount}, function(e) {
@@ -1035,10 +1103,12 @@ $('#info-panel').on('click', '#collect-troops-button', function(e) {
 	e.preventDefault();
 	if (!trainingFinished(Tiles[UI.selectedTile]) || Tiles[UI.selectedTile].collected) {
 		addMessage('Training not yet completed, or already deployed.');
+		World.Sounds.tick1.play();
 		return false;
 	}
 	if (custom.maxOccupancy(Tiles[UI.selectedTile]) < (Tiles[UI.selectedTile].unit ? Tiles[UI.selectedTile].unit.troops : 0) + Tiles[UI.selectedTile].trainAmount) {
-		addMessage('Too many troops for destination tile. ');
+		World.Sounds.tick1.play();
+		addMessage('Too many troops for destination tile. ', '#f88');
 	}
 
 	$('#collect-troops-button').hide();
@@ -1050,7 +1120,12 @@ $('#info-panel').on('click', '#collect-troops-button', function(e) {
 		if (data.numTroops) {
 			addMessage('Troops on tile: ' + data.numTroops);
 		}
+		World.Sounds[randomArray(['unit1', 'unit2','unit3'])].play();
 		//tileHtml(UI.selectedTile);
+		if (Tiles[UI.selectedTile].readyMesh) {
+			Tiles[UI.selectedTile].readyMesh.dispose();
+			Tiles[UI.selectedTile].readyMesh = null;
+		}
 		return;
 /*		let amount = Tiles[UI.selectedTile].trainAmount;
 		Tiles[UI.selectedTile].collected = true;
@@ -1076,6 +1151,7 @@ $('#info-panel').on('click', '#levelup-button', function(e) {
 	let cost = World.buildingData[Tiles[UI.selectedTile].building].cost;
 	cost = custom.levelUpCost(cost, Tiles[UI.selectedTile].level + 1);
 	if (!deductCost(cost)) {
+		World.Sounds.tick1.play();
 		return false;
 	}
 	$.post('./levelup.php', {x: UI.x, y: UI.y, cost: cost}, function(e) {
@@ -1085,6 +1161,7 @@ $('#info-panel').on('click', '#levelup-button', function(e) {
 			addMessage(data.error, '#f88');
 			return;
 		}
+		World.Sounds.upgrade1.play();
 		Tiles[UI.selectedTile].level++;
 		tileHtml(UI.selectedTile);
 	});
@@ -1176,6 +1253,7 @@ function checkSettleLocation(tile) {
 $('#info-panel').on('click', '#settle-button', function(e) {
 	if (!checkSettleLocation(Tiles[UI.selectedTile])) {
 		addMessage('Location too close to other settlement; chose farther away. ', '#f88');
+		World.Sounds.tick1.play();
 		return false;
 	}
 	$.post('./settle.php', {x: UI.x, y: UI.y, owner: Lamden.wallet}, function(e) {
@@ -1225,15 +1303,19 @@ function colonizeMode() {
 $('#colonize-button').click(colonizeMode);
 function colonizeTile() {
 	if (!deductCost({0:100})) {
+		World.Sounds.tick1.play();
 		return false;
 	}
 	if (Tiles[UI.x + ',' + UI.y].owner) {
 		addMessage('This tile is already owned', '#f88');
+		World.Sounds.tick1.play();
 		return false;
 	} else if (!World.ownAdjacentTile(UI.x, UI.y)) {
 		addMessage('You can only colonize tiles adjacent to tiles you already own', '#f88');
+		World.Sounds.tick1.play();
 		return false;
 	}
+	World.Sounds.tick2.play();
 	$.post('./buytile.php', {x: UI.x, y: UI.y, owner: Lamden.wallet}, function(e) {
 		console.log(e);
 		var data = JSON.parse(e);
@@ -1255,6 +1337,7 @@ function colonizeTile() {
 
 $('#info-panel').on('click', '#fortify-button', function(e) {
 	if (!deductCost({0:1000, 2:1000,4:1000})) {
+		World.Sounds.tick1.play();
 		return false;
 	}
 	tileHtml(UI.selectedTile);
@@ -1357,12 +1440,15 @@ $('#info-panel').on('click', '#create-units button', function(e) {
 	}
 	updateUnitCount(num);
 });
+// deprecated
 $('#info-panel').on('click', '#create-tank button', function() {
 	if (Tiles[UI.selectedTile].unit && Tiles[UI.selectedTile].unit.troops + 1000 > (techHasResearched(7) ? 2000 : 1000)) {
 		addMessage('Tile full', '#f80');
+		World.Sounds.tick1.play();
 		return false;
 	}
 	if (!deductCost({0:10, 4:10})) {
+		World.Sounds.tick1.play();
 		return false;
 	}
 	if (Tiles[UI.selectedTile].unit) {
@@ -1389,3 +1475,27 @@ function addMessage(message, c) {
 	$('#loading-screen p').html(message);
 	$("#chat-panel").scrollTop($("#chat-panel")[0].scrollHeight);
 }
+
+function checkTerritory() {
+	for (let t in Player.territory) {
+		let tile = Player.territory[t];
+		let ready = false;
+		if (conversionFinished(tile.x + ',' + tile.y)) {
+			ready = 'true';
+		} else if (trainingFinished(tile)) {
+			ready = 'true';
+		} else if (mineFinished(tile)) {
+			ready = 'true';
+		}
+		if (ready && !tile.readyMesh) {
+			tile.readyMesh = World.assets['Lamden Logo'].clone('Logo');
+			tile.readyMesh.position = tile.pos.add(v(0,10,0));
+			tile.readyMesh.rotation.y = Math.random() * 3.14;
+			tile.readyMesh.registerBeforeRender(function() {
+				tile.readyMesh.rotation.y += 3 / engine.fps;
+				tile.readyMesh.position.y = 10 + Math.sin(tile.readyMesh.rotation.y);
+			});
+		}
+	}
+}
+window.setInterval(checkTerritory, 5000);

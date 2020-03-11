@@ -43,6 +43,7 @@ const World = {
 		14: {name: 'Smelt Ore to Uranium', requiresLevel: 4, consumes: 2, produces: 17, speed: 1, capacity: 100},
 		15: {name: 'Refine Fossil Fuel to Hydrazine', requiresLevel: 4, consumes: 3, produces: 18, speed: 1, capacity: 100},
 		16: {name: 'Extract Nitrates from Rock', requiresLevel: 4, consumes: 1, produces: 19, speed: 1, capacity: 100},
+		17: {name: 'Refine Fossil Fuel to Plastics', requiresLevel: 1, consumes: 3, produces: 16, speed: 1, capacity: 100},
 	},
 	Resources: {
 		0: {name: 'Energy'},
@@ -74,18 +75,24 @@ const World = {
 		unit3: new BABYLON.Sound('Unit 3', 'sounds/unit3.mp3', scene, null, {volume: .2}),
 		confirm1: new BABYLON.Sound('Confirm 1', 'sounds/confirm1.mp3', scene, null, {volume: .2}),
 		confirm2: new BABYLON.Sound('Confirm 2', 'sounds/confirm2.mp3', scene, null, {volume: .2}),
+		engine1: new BABYLON.Sound('engine 1', 'sounds/engine2.mp3', scene, null, {volume: .01, loop: true}),
 		enemy1: new BABYLON.Sound('enemy 1', 'sounds/enemy1.mp3', scene, null, {volume: .2}),
 		enemy2: new BABYLON.Sound('enemy 2', 'sounds/enemy2.mp3', scene, null, {volume: .2}),
+		missile1: new BABYLON.Sound('missile 1', 'sounds/missile1.mp3', scene, null, {volume: .5}),
 		negative1: new BABYLON.Sound('Negative 1', 'sounds/negative1.mp3', scene, null, {volume: .2}),
 		negative2: new BABYLON.Sound('Negative 2', 'sounds/negative2.mp3', scene, null, {volume: .2}),
-		gun1: new BABYLON.Sound('gun 1', 'sounds/gun1.mp3', scene, null, {volume: .2}),
-		gun2: new BABYLON.Sound('gun 2', 'sounds/gun2.mp3', scene, null, {volume: .2}),
+		gun1: new BABYLON.Sound('gun 1', 'sounds/gun1.mp3', scene, null, {volume: .4}),
+		gun2: new BABYLON.Sound('gun 2', 'sounds/gun2.mp3', scene, null, {volume: .4}),
+		refinery1: new BABYLON.Sound('refinery1', 'sounds/refinery1.mp3', scene, null, {volume: .02, loop: true}),
+		rock1: new BABYLON.Sound('rock1', 'sounds/rock1.mp3', scene, null, {volume: .3}),
 		explosion1: new BABYLON.Sound('explosion1', 'sounds/explosion1.mp3', scene, null, {volume: .3}),
 		explosion2: new BABYLON.Sound('explosion2', 'sounds/explosion2.mp3', scene, null, {volume: .3}),
 		explosion3: new BABYLON.Sound('explosion3', 'sounds/explosion3.mp3', scene, null, {volume: .3}),
 		explosion4: new BABYLON.Sound('explosion4', 'sounds/explosion4.mp3', scene, null, {volume: .3}),
 		explosion5: new BABYLON.Sound('explosion5', 'sounds/explosion5.mp3', scene, null, {volume: .3}),
 		explosion6: new BABYLON.Sound('explosion6', 'sounds/explosion6.mp3', scene, null, {volume: .3}),
+		upgrade1: new BABYLON.Sound('upgrade1', 'sounds/upgrade1.mp3', scene, null, {volume: .3}),
+		upgrade2: new BABYLON.Sound('upgrade2', 'sounds/upgrade2.mp3', scene, null, {volume: .3}),
 	},
 	Technologies: {
 		1: {name: 'Coal', researchedAt: 1, duration: 300, cost: {1: 1000, 4: 500}, description: 'Allows building of power plants and unlocks other techs. '},
@@ -106,6 +113,8 @@ const World = {
 		16: {name: 'Logistics II', researchedAt: 1, requiresTech: 7, duration: 300, cost: {1: 1000, 4: 500, 12: 5000}, description: 'Increases the maximum number of units per tile by 4000'},
 		17: {name: 'Improved Blending II ', researchedAt: 10, requiresTech: 13, duration: 300, cost: {1: 1000, 14: 5000, 16: 5000}, description: 'Increases refining yield by 25%. '},
 		18: {name: 'Rebar II', researchedAt: 10, duration: 300, cost: {1: 1000, 11: 5000}, description: 'Increases hp of new buildings by 100%. '},
+		19: {name: 'Power Effeciency', researchedAt: 1, duration: 300, cost: {0: 1000, 8: 500}, description: 'Reduces energy cost for unit actions by 50%. '},
+		20: {name: 'Improved Storage', researchedAt: 10, duration: 300, cost: {0: 1000, 11: 2000}, description: 'Increases capacity of mines and oilwell by 100%. '},
 	},
 	tileTypes: {
 		'water': {name: 'Water', yield: [0,0,0,0]},
@@ -426,7 +435,7 @@ const World = {
 			for (let y = World.offset.y - Math.round(drawDistance * .14); y < World.offset.y + Math.round(drawDistance * .14); y++) {
 				let c = World.getBlendColorAtPosition({x: x + 256, y: y + 256});
 				let id = x + ',' + y;
-				let pos = v((x - 0) * 9.2 - (y % 2 == 0 ? 4.6 : 0), 0, (y - 0) * 8);
+				let pos = mapPosition(x, y); //v((x - 0) * 9.2 - (y % 2 == 0 ? 4.6 : 0), 0, (y - 0) * 8);
 				if (!Tiles[id]) {
 					Tiles[id] = {x: x, y: y, type: 'water', pos: pos};
 				}
@@ -437,18 +446,18 @@ const World = {
 					// random value used for giving each tile a distinct color/rotation/model
 					let r = World.random[Math.abs(x * 256 + y) % 100];
 					if (c[1] > 192) { // desert
-						addModel(World.assets[r < .2 ? 'Desert10' : 'Desert11'], pos, v(0,Math.PI / 2,0), .22, color(r * .2 + .8,r * .1 + .9,r * .2 + .8));
-						if (0 && r < .2) {
+						addModel(World.assets[r < .2 ? 'Desert10' : 'Desert11'], pos, v(0,0,0), .22, color(r * .2 + .8,r * .1 + .9,r * .2 + .8));
+/*						if (0 && r < .2) {
 							let index = Math.floor(r * 10);
 							addModel(World.assets[plainMeshes[index]], pos, v(0,Math.round(r * 6) / 6 * Math.PI * 2 + Math.PI / 2,0), .0088);
-						}
+						}*/
 						Tiles[id].type = 'desert';
 					} else if (c[2] > 128) { // rock
 						Tiles[id].type = 'rock';
 						//addModel(World.assets['NGon006'], pos, v(0,Math.PI / 2,0), .0088);
 						//addModel(World.assets[r < .5 ? 'Rocks2' : 'Rocks1'], pos, v(0,Math.PI / 2,0), .0088);
-						addModel(World.assets[r < .5 ? 'Rock2' : 'Rock10'], pos, v(0,Math.round(r * 6) / 6 * Math.PI * 2 + Math.PI / 2,0), .22);
-						if (0 && !scene.getMeshByName('Rock' + x + ',' + y)) {
+						addModel(World.assets[r < .5 ? 'Rock2' : 'Rock10'], pos, v(0,Math.round(r * 6) / 6 * Math.PI * 2,0), .22);
+/*						if (0 && !scene.getMeshByName('Rock' + x + ',' + y)) {
 							let rock = World.assets[Math.random() < .5 ? 'Rocks1' : 'Rocks2'].createInstance('Rock' + x + ',' + y);
 							rock.position = mapPosition(x, y);
 							rock.rotation.y = Math.round(Math.random() * 6) / 6 * Math.PI * 2 + Math.PI / 2;
@@ -456,13 +465,13 @@ const World = {
 							shadowRenderList.push(rock);
 							rock.freezeWorldMatrix();
 							World.props.push(rock);
-						}
+						}*/
 					} else if (c[0] > 192) { // forest
 						//addModel(World.assets[Math.random() < .5 ? 'NGon002' : 'NGon003'], pos, v(0,Math.PI / 2,0), .0088);
 						if (!Tiles[id].building) {
-							addModel(World.assets[r < .5 ? 'Forest10' : 'Forest10'], pos, v(0,Math.round(r * 6) / 6 * Math.PI * 2 + Math.PI / 2,0), .22);
+							addModel(World.assets[r < .5 ? 'Forest10' : 'Forest10'], pos, v(0,Math.round(r * 6) / 6 * Math.PI * 2,0), .22);
 						}
-						if (0 && !scene.getMeshByName('Forest' + x + ',' + y)) {
+/*						if (0 && !scene.getMeshByName('Forest' + x + ',' + y)) {
 							let forest = World.assets[Math.random() < .5 ? 'Forest3' : 'Forest3'].createInstance('Forest' + x + ',' + y);
 							forest.position = mapPosition(x, y);
 							forest.rotation.y = Math.round(Math.random() * 6) / 6 * Math.PI * 2 + Math.PI / 2;
@@ -471,11 +480,11 @@ const World = {
 							shadowRenderList.push(forest);
 							forest.freezeWorldMatrix();
 							World.props.push(forest);
-						}
+						}*/
 						Tiles[id].type = 'forest';
 					} else { // grass
 						//addModel(grass, pos, v(0,Math.PI / 2,0), .0088, color(r * .5 + .5,r * .2 + .8,r * .5 + .5));
-						addModel(grass, pos, v(0,Math.PI / 2,0), .22, color(r * .2 + .8,r * .2 + .8,r * .2 + .8));
+						addModel(grass, pos, v(0,0,0), .22, color(r * .2 + .8,r * .2 + .8,r * .2 + .8));
 						r = World.random[Math.abs(x + y * 256) % 100];
 						if (0 && r < .4) {
 							let index = Math.floor(r * 10);
@@ -494,10 +503,10 @@ const World = {
 						Tiles[id].type = 'grass';
 					}
 					if (Tiles[id].owner == Lamden.wallet) {
-						addModel(UI.friendlyTerritory, Tiles[id].pos.add(v(0,.09,0)), v(0,Math.PI / 2,0), .22);
+						addModel(UI.friendlyTerritory, Tiles[id].pos.add(v(0,.09,0)), v(0,0,0), .22);
 					}
 					if (Tiles[id].owner && Tiles[id].owner != Lamden.wallet) {
-						addModel(UI.enemyTerritory, Tiles[id].pos.add(v(0,.09,0)), v(0,Math.PI / 2,0), .22);
+						addModel(UI.enemyTerritory, Tiles[id].pos.add(v(0,.09,0)), v(0,0,0), .22);
 					}
 					if (Tiles[id].fortification && !scene.getMeshByName('Fortification' + x + ',' + y)) {
 						Tiles[id].fortMesh = addFort(x, y, Tiles[id].owner);
@@ -544,7 +553,7 @@ function addBuilding(tile) {
 		}
 		building.buildingID = tile.building;
 		building.position = mapPosition(tile.x, tile.y).add(v(0,.05,0));
-		building.rotation.y = Math.round(Math.random() * 6) / 6 * Math.PI * 2 + Math.PI / 2;
+		building.rotation.y = Math.round(Math.random() * 6) / 6 * Math.PI * 2;
 		building.scaling = v(1,1,1).scaleInPlace(data.meshScale ? data.meshScale : .22);
 		shadowRenderList.push(building);
 		building.freezeWorldMatrix();
@@ -575,10 +584,15 @@ function addBuilding(tile) {
 		addModel(building, mapPosition(tile.x, tile.y), v(0,0,0), 1);
 	}
 
-	if (!tile.nameplate && tile.building == 0) {
-		tile.nameplate = addNamePlate(mapPosition(tile.x, tile.y), tile.name, color(1,0,0), 8);
+	if (!tile.nameplate && tile.building == 1) {
+		tile.nameplate = addNamePlate(mapPosition(tile.x, tile.y), tile.owner, color(1,0,0), 14);
 	}
-
+	if (tile.owner == Lamden.wallet) {
+		Player.territory = Player.territory || [];
+		if (Player.territory.indexOf(tile) == -1) {
+			Player.territory.push(tile);
+		}
+	}
 }
 
 // looks to be deprecated soon
@@ -598,7 +612,7 @@ function addNamePlate(pos, text, c, size) {
 function addFort(x, y, owner) {
 	let fort = World.assets['Fortification'].createInstance('Fortification' + x + ',' + y);
 	fort.position = mapPosition(x, y).add(v(0,.01,0));
-	fort.rotation.y = Math.round(Math.random() * 6) / 6 * Math.PI * 2 + Math.PI / 2;
+	fort.rotation.y = Math.round(Math.random() * 6) / 6 * Math.PI * 2;
 	fort.scaling = v(1,1,1).scaleInPlace(.22);
 	shadowRenderList.push(fort);
 	fort.freezeWorldMatrix();
@@ -617,9 +631,9 @@ function addUnit(num, pos, tile, owner) {
 	u.scaling.scaleInPlace(.02);
 	u.parent = unit;
 
-	let c = scene.getMeshByName('Soldier_01_mesh').clone('Hat');
-	c.material = scene.getMeshByName('Soldier_01_mesh').material.clone('Hat');
-	c.skeleton = u.skeleton.clone();
+	let c = scene.getMeshByName('Soldier_01_mesh').clone('Clothes');
+	c.material = scene.getMeshByName('Soldier_01_mesh').material.clone('Clothes');
+	c.skeleton = scene.getMeshByName('Soldier_01_mesh').skeleton.clone();
 	c.position = v(0,0,0);
 	c.rotation = v(-Math.PI / 2, 0, 0);
 	c.scaling.scaleInPlace(.02);
@@ -631,13 +645,30 @@ function addUnit(num, pos, tile, owner) {
 	unit.weapon = w;
 
 	shadowRenderList.push(u);
-	scene.beginAnimation(u, 0, 50, true, 1);
-	scene.beginAnimation(c, 0, 50, true, 1);
-	u.death = function() {
-		scene.beginAnimation(u, 0, 50, false, 1);
+	unit.idle = function() {
+		w.rotation.x = 0;
+		scene.beginAnimation(u, 0, 50, true, 1);
+		scene.beginAnimation(c, 0, 50, true, 1);
+	}
+	unit.idle();
+	unit.walk = function() {
+		w.rotation.x = 0;
+		scene.beginAnimation(u, 51, 80, true, 1);
+		scene.beginAnimation(c, 51, 80, true, 1);
+	}
+	unit.death = function() {
+		w.rotation.x = 0;
+		scene.beginAnimation(u, 493, 545, false, 1);
+		scene.beginAnimation(c, 493, 545, false, 1);
+	}
+	unit.battle = function() {
+		w.rotation.x = -1.5;
+		scene.beginAnimation(u, 1479, 1508, true, 1);
+		scene.beginAnimation(c, 1479, 1508, true, 1);
 	}
 
 	unit.mesh = u;
+	unit.weapon = w;
 	unit.position = pos;
 	unit.tileID = tile;
 	unit.type = 'unit';
@@ -651,13 +682,10 @@ function addUnit(num, pos, tile, owner) {
 	World.units.push(unit);
 	unit.shoot = function() {
 		let sound = World.Sounds['gun' + Math.ceil(Math.random() * 2)];
-		sound.maxDistance = 300;
+		sound.maxDistance = 50;
 		sound.attachToMesh(unit);
 		console.log(sound);
 		sound.play();
-	}
-	unit.death = function() {
-		scene.beginAnimation(u, 493, 545, false, 1);
 	}
 	$('#labels').append('<div id="' + unit.id + '" style="color: ' + (unit.owner == Lamden.wallet ? '#0f0' : '#f88') + '">' + formatName(unit.owner) + '<br>' + unit.troops + '</div>');
 	return unit;
@@ -683,6 +711,10 @@ function addTank(x, y, id, owner) {
 	Tiles[id].unit = tank;
 	shadowRenderList.push(base);
 	tank.id = 'u' + Math.round(Math.random() * 9999);
+	World.Sounds['engine1'].autoplay = true;
+	World.Sounds['engine1'].maxDistance = 100;
+	tank.engine = World.Sounds['engine1'].clone();
+	tank.engine.attachToMesh(tank);
 	tank.shoot = function() {
 		World.Sounds['explosion' + Math.ceil(Math.random() * 6)].play();
 	}
@@ -711,6 +743,10 @@ function addShip(x, y, id, owner) {
 	Tiles[id].unit = ship;
 	shadowRenderList.push(base);
 	ship.id = 'u' + Math.round(Math.random() * 9999);
+	World.Sounds['refinery1'].autoplay = true;
+	World.Sounds['refinery1'].maxDistance = 100;
+	ship.engine = World.Sounds['refinery1'].clone();
+	ship.engine.attachToMesh(ship);
 	ship.shoot = function() {
 		World.Sounds['explosion' + Math.ceil(Math.random() * 6)].play();
 	}
@@ -737,9 +773,15 @@ function battle(a, b, aRemain, bRemain) {
 	//var power2 = Math.round(Math.random() * a.troops * (techHasResearched(5) ? 1.1 : 1));
 	//b.troops -= power2;
 	b.troops = bRemain;
+	if (b.battle) {
+		b.battle();
+	}
 	b.shoot();
 	a.troops = aRemain;
 	a.shoot();
+	if (a.battle) {
+		a.battle();
+	}
 
 	$('#' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
 	$('#' + b.id).html(formatName(b.owner) + '<br>' + b.troops);
@@ -787,7 +829,10 @@ function battle(a, b, aRemain, bRemain) {
 				a.dispose();
 			}
 
-		},1000);
+		},2000);
+	} else if (a.battle) {
+		window.setTimeout(a.idle, 3000);
+
 	}
 	if (b.troops <= 0) {
 		if (b.death) {
@@ -808,7 +853,9 @@ function battle(a, b, aRemain, bRemain) {
 			} else {
 				b.dispose();
 			}
-		}, 1000);
+		}, 2000);
+	} else if (b.battle) {
+		window.setTimeout(b.idle, 3000);
 	}
 	addMessage('Attacker left: ' + a.troops + ', defender left: ' + b.troops , '#fff');
 }
@@ -819,6 +866,10 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 	//let power2 = Math.round(Math.random() * a.troops * 2);
 	//a.troops -= power1;
 	a.troops = aRemain;
+	a.shoot();
+	if (a.battle) {
+		a.battle();
+	}
 	console.log(a.id, a.troops);
 	$('#' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
 	b.fortification = bFort;
@@ -863,6 +914,8 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 				a.dispose();
 			}
 		}, 2000);
+	} else if (a.battle) {
+		window.setTimeout(a.idle, 3000);
 	}
 	if (b.fortification <= 0 && b.fortMesh) {
 		addMessage('Fortification destroyed [' + b.x + ',' + b.y + ']');
@@ -901,6 +954,11 @@ function fireMissile(source, target, troopRemain, hpRemain, fortRemain) {
     missile.position = source.pos.add(v(0,4,0));
 	let exhaust = particles(missile, 'exhaust-s');
 	exhaust.start();
+	let sound = World.Sounds['missile1'];
+	sound.maxDistance = 300;
+	sound.attachToMesh(missile);
+	console.log(sound);
+	sound.play();
 
 	//target = target.pos;
 
@@ -945,7 +1003,15 @@ function fireMissile(source, target, troopRemain, hpRemain, fortRemain) {
 			explosion.start();
 			let debris1 = particles(missile, 'debris');
 			debris1.start();
-
+			sound.stop();
+			World.Sounds['explosion6'].play();
+			if (troopRemain > 0) {
+				addMessage('Troops left: ' + troopRemain, '#fff');
+			} else if (fortRemain > 0) {
+				addMessage('Fortification HP left: ' + fortRemain, '#fff');
+			} else {
+				addMessage('Building HP left: ' + hpRemain, '#fff');
+			}
 //			let damage = Math.random() * power;
 //			console.log(damage);
 			if (target.unit && troopRemain) {
@@ -968,16 +1034,20 @@ function fireMissile(source, target, troopRemain, hpRemain, fortRemain) {
 			if (target.currentHP && hpRemain) {
 				target.currentHP = hpRemain;
 			}
-			if (target.currentHP && !hpRemain) {
+			if (!hpRemain) {
 				target.currentHP = 0;
 				target.maxHP = 0;
 				target.building = 0;
-				shadowRenderList.splice(shadowRenderList.indexOf(target.mesh), 1);
-				target.mesh.dispose();
-				target.mesh = null;
+				if (target.mesh) {
+					shadowRenderList.splice(shadowRenderList.indexOf(target.mesh), 1);
+					target.mesh.dispose();
+					target.mesh = null;
+				}
 				target.owner = null;
+				addMessage('Ownership released [' + target.x + ',' + target.y + ']');
+				World.drawWorld(true);
 			}
-			updateSPSMeshes();
+//			updateSPSMeshes();
 			/*
 			if (target.unit && damage >= target.unit.troops) {
 				target.unit.troops = 0;

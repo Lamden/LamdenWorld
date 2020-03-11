@@ -54,7 +54,7 @@ custom = {
 
 	trainMultipliers: {
 		8: 1,
-		9: 10,
+		9: 5,
 		12: 5
 	},
 	// how many units can be trained per minute at barracks
@@ -83,9 +83,9 @@ custom = {
 		return {0: this.trainCapacity(level) * this.trainCostMultiplier(level)};
 	},
 
-	// capacity for a mine
+	// capacity for a mine/oilwell
 	mineCapacity(level) {
-		return level * 1000;
+		return level * 1000 * (techHasResearched(20) ? 2 : 1);
 	},
 
 	// yield speed
@@ -126,7 +126,7 @@ custom = {
 
 	// returns number of resources that can be refined per second
 	refinerySpeed(level) {
-		return level;
+		return level * 3;
 		return Math.round(Math.sqrt(level) * 10) / 10;
 	},
 

@@ -23,7 +23,7 @@ const World = {
 		13: {name: 'Marketplace', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, description: ''},
 		14: {name: 'Missile Silo', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, icon: 'silo', mesh: 'Silo2', meshScale: .22, description: ''},
 		15: {name: 'Bunker', requiresTile: 'grass', hp: 5000, cost: {0: 1000, 2: 100, 4: 100}, icon: 'bunker', mesh: 'Bunker', meshScale: .22, description: 'Can house 5000 additional units compared to other tiles. '},
-		16: {name: 'Missile Defense System', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, mesh: 'Missile Silo', meshScale: .0066, description: 'Defends your territory in a 5 tile radius from missile attacks. Succes rate 50%. '},
+		16: {name: 'Missile Defense System', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, mesh: 'Silo2', meshScale: .22, description: 'Defends your territory in a 5 tile radius from missile attacks. Succes rate 50%. '},
 		17: {name: 'Artillery Tower', requiresTile: 'grass', hp: 500, power: 500, cost: {0: 1000, 2: 100, 4: 100}, description: 'Simple defensive structure to withstand small attacks in a 5 tile radius. '},
 	},
 	Conversions: {
@@ -215,6 +215,15 @@ const World = {
 		}
 		window.setInterval(updateCanvas, 500);
 		window.setTimeout(function() { World.drawWorld(true) }, 500);
+		window.setInterval(function() {
+			for (var p in scene.particleSystems) {
+				if (distance(scene.particleSystems[p].emitter.getAbsolutePosition(), camera.position) < 150) {
+					scene.particleSystems[p].start();
+				} else {
+					scene.particleSystems[p].stop();
+				}
+			}
+		}, 1000);
 
 		Lamden.getCapital();
 
@@ -223,7 +232,7 @@ const World = {
 			for (let t in tiles) {
 				let id = tiles[t].x + ',' + tiles[t].y;
 				if (!Tiles[id]) {
-					Tiles[id] = {type: 'water', pos: mapPosition(tiles[t].x, tiles[t].y)};
+					Tiles[id] = {type: 'water', pos: mapPosition(tiles[t].x, tiles[t].y), x: tiles[t].x, y: tiles[t].y};
 				}
 				setBuildingData(Tiles[id], tiles[t].building, tiles[t].owner, tiles[t].lastHarvest);
 				Tiles[id].level = tiles[t].level;
@@ -235,17 +244,11 @@ const World = {
 				Tiles[id].convertID = tiles[t].convertID;
 				Tiles[id].collected = tiles[t].collected ? true : false;
 				if (tiles[t].numTroops) {
-					if (tiles[t].numTroops < 1000 && Tiles[id].type != 'water') {
-						addUnit(tiles[t].numTroops, mapPosition(tiles[t].x, tiles[t].y), id, tiles[t].troopOwner);
-					} else if (Tiles[id].type != 'water') {
-						let tank = addTank(tiles[t].x, tiles[t].y, id, tiles[t].troopOwner);
-						tank.troops = tiles[t].numTroops;
-						$('#' + tank.id).html(formatName(tank.owner) + '<br>' + tank.troops);
-					} else {
-						let ship = addShip(tiles[t].x, tiles[t].y, id, tiles[t].troopOwner);
-						ship.troops = tiles[t].numTroops;
-						$('#' + ship.id).html(formatName(ship.owner) + '<br>' + ship.troops);
-					}
+					Tiles[id].numTroops = tiles[t].numTroops;
+					Tiles[id].troopOwner = tiles[t].troopOwner;
+					/*
+
+					*/
 				}
 			}
 			engine.runRenderLoop(renderLoop);
@@ -259,7 +262,7 @@ const World = {
 			World.logID = parseInt(e) || 0;
 			window.setInterval(function() {
 				$.get('./getlog.php?id=' + World.logID, function(e) {
-					console.log(e);
+					//console.log(e);
 					let log = JSON.parse(e);
 					for (let i in log) {
 						if (log[i].id > World.logID) {
@@ -272,7 +275,7 @@ const World = {
 						if (type == 'colonize') {
 							Tiles[id].owner = log[i].var1;
 							let model = log[i].var1 == Lamden.wallet ? UI.friendlyTerritory : UI.enemyTerritory;
-							addModel(model, Tiles[id].pos.add(v(0,.02,0)), v(0,Math.PI / 2,0), .22);
+							addModel(model, Tiles[id].pos.add(v(0,.02,0)), v(0,0,0), .22);
 							if (UI.selectedTile) {
 								tileHtml(UI.selectedTile);
 							}
@@ -322,7 +325,7 @@ const World = {
 								Tiles[id2].unit.troops += troops;
 								unitID = Tiles[id2].unit.id;
 								$('#' + unitID).html(formatName(Tiles[id2].unit.owner) + '<br>' + Tiles[id2].unit.troops);
-								addMessage('Units merged. now counting ' + Tiles[id].unit.troops);
+								addMessage('Units merged. now counting ' + Tiles[id2].unit.troops);
 								UI.selectedUnit = Tiles[id].unit; // change selection to
 								UI.selectedUnit.ready = UI.now() + 30;
 								$('#info-panel').hide();
@@ -523,6 +526,17 @@ const World = {
 					addBuilding(Tiles[id]);
 				}
 
+				if (Tiles[id].numTroops && !Tiles[id].unit && Tiles[id].numTroops < 1000 && Tiles[id].type != 'water') {
+					addUnit(Tiles[id].numTroops, mapPosition(Tiles[id].x, Tiles[id].y), id, Tiles[id].troopOwner);
+				} else if (Tiles[id].numTroops && !Tiles[id].unit && Tiles[id].type != 'water') {
+					let tank = addTank(Tiles[id].x, Tiles[id].y, id, Tiles[id].troopOwner);
+					tank.troops = Tiles[id].numTroops;
+					$('#' + tank.id).html(formatName(tank.owner) + '<br>' + tank.troops);
+				} else if (Tiles[id].numTroops && !Tiles[id].unit) {
+					let ship = addShip(Tiles[id].x, Tiles[id].y, id, Tiles[id].troopOwner);
+					ship.troops = Tiles[id].numTroops;
+					$('#' + ship.id).html(formatName(ship.owner) + '<br>' + ship.troops);
+				}
 			}
 		}
 
@@ -544,30 +558,28 @@ function addBuilding(tile) {
 		shadowRenderList.splice(shadowRenderList.indexOf(tile.mesh), 1);
 		tile.mesh.dispose();
 	}
-	if (data.mesh && !scene.getMeshByName(data.name + tile.x + ',' + tile.y)) {
+	if (data.mesh && !scene.getMeshByName(data.name + tile.x + ',' + tile.y) && World.assets[data.mesh]) {
 		let building = null;
-		if (tile.building == 4) {
-			building = World.assets[data.mesh].createInstance(data.name + tile.x + ',' + tile.y);
-		} else {
-			building = World.assets[data.mesh].createInstance(data.name + tile.x + ',' + tile.y);
-		}
+		building = World.assets[data.mesh].createInstance(data.name + tile.x + ',' + tile.y);
 		building.buildingID = tile.building;
 		building.position = mapPosition(tile.x, tile.y).add(v(0,.05,0));
 		building.rotation.y = Math.round(Math.random() * 6) / 6 * Math.PI * 2;
 		building.scaling = v(1,1,1).scaleInPlace(data.meshScale ? data.meshScale : .22);
 		shadowRenderList.push(building);
 		building.freezeWorldMatrix();
-		World.reflect.push(building);
+		//World.reflect.push(building);
 		World.props.push(building);
 		tile.mesh = building;
 		if (data.smoke) {
-			let emitter = new BABYLON.Mesh.CreateBox('test', .1, scene);
-			emitter.parent = building;
-			emitter.scaling = v(1,1,1).scaleInPlace(1/building.scaling.x);
-			emitter.position = data.smoke.scale(1/building.scaling.x);
-			let effect = particles(emitter, 'smoke');
-			effect.start();
-			emitter.freezeWorldMatrix();
+			//let emitter = new BABYLON.Mesh.CreateBox('test', .1, scene);
+			//emitter.parent = building;
+			//emitter.scaling = v(1,1,1).scaleInPlace(1/building.scaling.x);
+			//emitter.position = data.smoke.scale(1/building.scaling.x);
+			let effect = particles(building, 'smoke');
+			effect.minEmitBox = data.smoke.scale(1/building.scaling.x);
+			effect.maxEmitBox = data.smoke.scale(1/building.scaling.x);
+			//effect.start();
+			//emitter.freezeWorldMatrix();
 		}
 		if (tile.building == 4) {
 			let arm = World.assets['Pumpjack Arm'].createInstance('Pumpjack Arm' + tile.x + ',' + tile.y);
@@ -624,22 +636,22 @@ function formatName(name) {
 function addUnit(num, pos, tile, owner) {
 	//u = (owner == Lamden.wallet ? unit : enemy).createInstance('Unit');
 	let unit = new BABYLON.Mesh('Military', scene); // base mesh
-	let u = scene.getMeshByName('Base_mesh').clone('Unit');
-	u.skeleton = scene.getMeshByName('Base_mesh').skeleton.clone('Skeleton');
+	let u = World.assets['Base_mesh'].clone('Unit');
+	u.skeleton = World.assets['Base_mesh'].skeleton.clone('Skeleton');
 	u.position = v(0,0,0);
 	u.rotation = v(-Math.PI / 2, 0, 0);
 	u.scaling.scaleInPlace(.02);
 	u.parent = unit;
 
-	let c = scene.getMeshByName('Soldier_01_mesh').clone('Clothes');
-	c.material = scene.getMeshByName('Soldier_01_mesh').material.clone('Clothes');
-	c.skeleton = scene.getMeshByName('Soldier_01_mesh').skeleton.clone();
+	let c = World.assets['Soldier_01_mesh'].clone('Clothes');
+	c.material = World.assets['Soldier_01_mesh'].material.clone('Clothes');
+	c.skeleton = World.assets['Soldier_01_mesh'].skeleton.clone();
 	c.position = v(0,0,0);
 	c.rotation = v(-Math.PI / 2, 0, 0);
 	c.scaling.scaleInPlace(.02);
 	c.parent = unit;
 
-	let w = scene.getMeshByName(randomArray(['Weapon_RPG','Weapon_AssultRifle02','Weapon_SniperRifle','Weapon_AssultRifle01'])).createInstance('Weapon');
+	let w = World.assets[randomArray(['Weapon_RPG','Weapon_AssultRifle02','Weapon_SniperRifle','Weapon_AssultRifle01'])].createInstance('Weapon');
 	w.rotation = v(0,Math.PI / 2,-Math.PI / 2); //-Math.PI / 2;
 	w.attachToBone(u.skeleton.bones[12], u);
 	unit.weapon = w;
@@ -687,16 +699,20 @@ function addUnit(num, pos, tile, owner) {
 		console.log(sound);
 		sound.play();
 	}
+	unit.freezeWorldMatrix();
+//	u.freezeWorldMatrix();
+//	c.freezeWorldMatrix();
+//	w.freezeWorldMatrix();
 	$('#labels').append('<div id="' + unit.id + '" style="color: ' + (unit.owner == Lamden.wallet ? '#0f0' : '#f88') + '">' + formatName(unit.owner) + '<br>' + unit.troops + '</div>');
 	return unit;
 }
 function addTank(x, y, id, owner) {
-	let tank = new BABYLON.Mesh('Tank', scene); // base mesh
-	let base = World.assets['Box007'].clone('Tank Body');
-	base.position = v(0,0,0);
-	base.scaling = v(1,1,1).scaleInPlace(.3);
-	base.parent = tank;
-	base.rotation = v(0,0,0);
+	//let tank = new BABYLON.Mesh('Tank', scene); // base mesh
+	let tank = World.assets['Box007'].clone('Tank');
+	//base.position = v(0,0,0);
+	tank.scaling = v(1,1,1).scaleInPlace(.3);
+	//base.parent = tank;
+	//base.rotation = v(0,0,0);
 
 	tank.position = mapPosition(x, y);
 	tank.rotation.y = Math.random() * Math.PI * 2;
@@ -709,7 +725,7 @@ function addTank(x, y, id, owner) {
 	tank.owner = owner;
 	tank.ready = Math.round((new Date()).getTime() / 1000) + 5;
 	Tiles[id].unit = tank;
-	shadowRenderList.push(base);
+	shadowRenderList.push(tank);
 	tank.id = 'u' + Math.round(Math.random() * 9999);
 	World.Sounds['engine1'].autoplay = true;
 	World.Sounds['engine1'].maxDistance = 100;
@@ -718,17 +734,18 @@ function addTank(x, y, id, owner) {
 	tank.shoot = function() {
 		World.Sounds['explosion' + Math.ceil(Math.random() * 6)].play();
 	}
+	tank.freezeWorldMatrix();
 	World.units.push(tank);
 	$('#labels').append('<div id="' + tank.id + '" style="color: ' + (tank.owner == Lamden.wallet ? '#0f0' : '#f88') + '">' + tank.owner + '<br>' + tank.troops + '</div>');
 	return tank;
 }
 function addShip(x, y, id, owner) {
-	let ship = new BABYLON.Mesh('Ship', scene); // base mesh
-	let base = World.assets['Battleship2'].clone('Ship');
-	base.position = v(0,0,0);
-	base.scaling = v(1,1,1).scaleInPlace(.3);
-	base.parent = ship;
-	base.rotation = v(0, Math.PI, 0);
+	//let ship = new BABYLON.Mesh('Ship', scene); // base mesh
+	let ship = World.assets['Battleship2'].clone('Ship');
+	//base.position = v(0,0,0);
+	ship.scaling = v(1,1,1).scaleInPlace(.3);
+	//base.parent = ship;
+	//base.rotation = v(0, Math.PI, 0);
 
 	ship.position = mapPosition(x, y);
 	ship.rotation.y = Math.random() * Math.PI * 2;
@@ -741,7 +758,7 @@ function addShip(x, y, id, owner) {
 	ship.owner = owner;
 	ship.ready = Math.round((new Date()).getTime() / 1000) + 5;
 	Tiles[id].unit = ship;
-	shadowRenderList.push(base);
+	shadowRenderList.push(ship);
 	ship.id = 'u' + Math.round(Math.random() * 9999);
 	World.Sounds['refinery1'].autoplay = true;
 	World.Sounds['refinery1'].maxDistance = 100;
@@ -750,6 +767,7 @@ function addShip(x, y, id, owner) {
 	ship.shoot = function() {
 		World.Sounds['explosion' + Math.ceil(Math.random() * 6)].play();
 	}
+	ship.freezeWorldMatrix();
 	World.units.push(ship);
 	$('#labels').append('<div id="' + ship.id + '" style="color: ' + (ship.owner == Lamden.wallet ? '#0f0' : '#f88') + '">' + ship.owner + '<br><span style="font-size: 120%; ">' + ship.troops + '</span></div>');
 	return ship;
@@ -763,21 +781,20 @@ scene.registerBeforeRender(function() {
 		let id = World.units[u].id;
 		let pos = getScreenCoords(World.units[u].position.add(v(0,10,0)));
 		if (document.getElementById(id)) {
-			$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
+			//$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
 		}
 	}
 });
 
 function battle(a, b, aRemain, bRemain) {
-	//var power1 = Math.round(Math.random() * b.troops);
-	//var power2 = Math.round(Math.random() * a.troops * (techHasResearched(5) ? 1.1 : 1));
-	//b.troops -= power2;
 	b.troops = bRemain;
+	Tiles[b.tileID].numTroops = bRemain;
 	if (b.battle) {
 		b.battle();
 	}
 	b.shoot();
 	a.troops = aRemain;
+	Tiles[a.tileID].numTroops = aRemain;
 	a.shoot();
 	if (a.battle) {
 		a.battle();
@@ -866,6 +883,7 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 	//let power2 = Math.round(Math.random() * a.troops * 2);
 	//a.troops -= power1;
 	a.troops = aRemain;
+	Tiles[a.tileID].numTroops = aRemain;
 	a.shoot();
 	if (a.battle) {
 		a.battle();
@@ -1216,8 +1234,8 @@ Effects = {
 		color1: new BABYLON.Color4(.2,.2,.2,1),
 		color2: new BABYLON.Color4(.04,.04,.04,.5),
 		colorDead: new BABYLON.Color4(.01,.01,.01,.1),
-		minEmitPower: .4,
-		maxEmitPower: .6,
+		minEmitPower: .1,
+		maxEmitPower: .2,
 		minLifeTime: 100,
 		maxLifeTime: 300,
 		minSize: .8,
@@ -1283,12 +1301,12 @@ function particles(emitter, name) {
 		beams.particles[p].scale.x = .5;
 	}
 	beams.mesh.position = camera.target.position;
-	scene.registerBeforeRender(function() {
+	window.setInterval(function() {
 		for (var p in beams.particles) {
 			beams.particles[p].rotation.y = -camera.alpha - Math.PI / 2;
 		}
 		beams.setParticles();
-	});
+	}, 500);
 	var animation = new BABYLON.Animation('Beams', 'material.opacityTexture.level', 30, 0, 1);
 	animation.setKeys([
 		{frame: 0, value: 0},

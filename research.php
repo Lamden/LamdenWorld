@@ -7,4 +7,5 @@ if (!deductCost($owner, $cost)) {
 	die('{"error": "Not enough resources"}');
 }
 $sql->q("INSERT INTO research (owner, id, stamp) VALUES ('$owner', $id, UNIX_TIMESTAMP())");
+echo '[]';
 ?>

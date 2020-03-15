@@ -45,7 +45,7 @@ if ($defender) { // existing tile
 		$siege = true;
 		// reculcalate power
 		$aPower = $attacker['numTroops'] * (hasResearched($attacker['troopOwner'], 5) ? 1.1 : 1) * (hasResearched($defender['troopOwner'], 10) ? .9 : 1);
-		$dPower = 2000 * (hasResearched($attacker['troopOwner'], 9) ? 1.3 : 1) * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
+		$dPower = 2000 * (hasResearched($defender['troopOwner'], 9) ? 1.3 : 1) * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
 /*		if (2000 > $attacker['numTroops']) { // defender stronger
 			//$attack = $attacker['numTroops'];
 			$attacker['numTroops'] -= $attacker['numTroops'] > 2000 ? 2000 : $attacker['numTroops'];

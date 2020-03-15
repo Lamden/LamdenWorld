@@ -384,6 +384,7 @@ function addModel(mesh, position, rotation, scaling, c) {
 	if (!sourceModels[name]) {
 		sourceModels[name] = mesh;
 	}
+
 	var id = mesh.material.name;
 	if (!meshTransformationData[id]) {
 		meshTransformationData[id] = {};
@@ -544,4 +545,15 @@ function updateSPSMeshes() {
 		modelSPS[id].mesh.freezeWorldMatrix();
 	}
 	updateSPS = {};
+}
+
+function dumpMats() {
+	for (var m in scene.materials) {
+		console.log(scene.materials[m].name, scene.materials[m].isFrozen);
+	}
+}
+function dumpMeshes() {
+	for (var m in scene.meshes) {
+		console.log(scene.meshes[m].name, scene.meshes[m].isWorldMatrixFrozen, scene.meshes[m].getTotalVertices());
+	}
 }

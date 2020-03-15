@@ -54,8 +54,11 @@ button:hover { background-color: #935; }
 #info-panel dd { text-align: right; }
 
 #minimap { position: fixed; bottom: 0px; left: 0px; width: 200px; height: 200px; background: rgba(128,128,128,1); }
-#chat-panel { bottom: 0px; left: 200px; padding: 10px; width: 400px; height: 200px; overflow-y: scroll; }
+#chat-panel { bottom: 0px; left: 200px; width: 400px; height: 200px; }
 #chat-panel li { display: block; }
+#chat-panel ul { overflow-y: scroll; height: 135px; padding: 10px; }
+#chat-panel form { position: fixed; bottom: 0; margin: -5px; }
+#chat-panel input { width: 400px; text-align: left; }
 
 #actions { position: fixed; bottom: 0px; left: 600px; right: 200px; padding: 10px; width: auto; height: 140px; display: none;
 	background-image: url(images/bg2.jpg); box-shadow: inset 0 0 3px #000; }
@@ -109,7 +112,9 @@ button:hover { background-color: #935; }
 <iframe id="minimap" src="map.html" scrolling="no"></iframe>
 <section id="chat-panel"><ul>
 	<li>Welcome to <img src="images/lamden.svg" style="width: 15px; height: 15px; "> LamdenWorld v0.1</li>
-</ul></section>
+</ul><form>
+<input type="text" name="body" autocomplete="off">
+</form></section>
 <section id="actions"></section>
 <section id="tabs">
 <img id="colonize-button" src="icons/flag.png" title="Colonize">
@@ -139,8 +144,8 @@ button:hover { background-color: #935; }
 <script src="core.js"></script>
 <script src="blendMaterial.js"></script>
 <script src="watermaterial.js"></script>
-<script src="world.js"></script>
-<script src="ui.js"></script>
+<script src="world.js?1"></script>
+<script src="ui.js?1"></script>
 <script src="custom.js"></script>
 <script>
 camera.lowerBetaLimit = .1;
@@ -150,6 +155,7 @@ camera.lowerRadiusLimit = 50;
 World.createWater({position: v(32, -.3, 32)});
 
 let building = new BABYLON.MeshBuilder.CreateBox('building', {width: 6, height: 2, depth: 6}, scene);
+building.material = new BABYLON.StandardMaterial('asdas', scene);
 building.position.y = -100;
 
 function mapPosition(x, y) {
@@ -222,6 +228,7 @@ const Lamden = {
 			}
 			Lamden.Players[Lamden.wallet] = data;
 			addMessage('Capital found at [' + data.x + ',' + data.y + ']');
+			Tiles[data.x + ',' + data.y] = Tiles[data.x + ',' + data.y] || {x: data.x, y: data.y, type: 'plains', pos: mapPosition(data.x, data.y)};
 			Tiles[data.x + ',' + data.y].name = data.name;
 			Tiles[data.x + ',' + data.y].updated = UI.now();
 			Player.capital = true;
@@ -344,13 +351,15 @@ document.addEventListener('txStatus', (e) => {
 
 
 function loadAssets() {
-	BABYLON.SceneLoader.ImportMesh('', 'data/', 'character.babylon?5', scene, function(meshes) {
+	BABYLON.SceneLoader.ImportMesh('', 'data/', 'character.babylon?6', scene, function(meshes) {
 		for (let m in meshes) {
 			meshes[m].setEnabled(false);
+			World.assets[meshes[m].name] = meshes[m];
+			scene.meshes.splice(scene.meshes.indexOf(meshes[m]), 1);
 		}
 		//scene.getMeshByName('Base_mesh').scaling.scaleInPlace(.1);
 		//scene.getMeshByName('Soldier_01_mesh').scaling.scaleInPlace(.1);
-		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?28', scene, function(meshes) {
+		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?29', scene, function(meshes) {
 			for (let m in meshes) {
 				meshes[m].position.scaleInPlace(.22);
 				meshes[m].position.y = 1;

@@ -119,7 +119,7 @@ function sql2json($rr) {
 			if ($i > 1) {
 				$json .= ', ';
 			}
-			$json .= '"' . $key . '": ' . (is_numeric($value) ? $value : '"' . $value . '"');
+			$json .= '"' . $key . '": ' . (is_numeric($value) ? $value : '"' . addslashes($value) . '"');
 		}
 		$json .= '}';
 	}
@@ -135,7 +135,7 @@ function sql2jsonKV($rr) {
 		if ($c > 1) {
 			$json .= ', ';
 		}
-		$json .= '"' . $t[0] . '": ' . (is_numeric($t[1]) ? $t[1] : '"' . $t[1] . '"');
+		$json .= '"' . $t[0] . '": ' . (is_numeric($t[1]) ? $t[1] : '"' . addslashes($t[1]) . '"');
 	}
 	$json .= '}';
 	return $json;

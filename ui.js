@@ -42,7 +42,7 @@ canvas.addEventListener('mousemove', (e) => {
 		return;
 	}
 	let pickResult = scene.pick(scene.pointerX, scene.pointerY, function(mesh) {
-		return mesh.name == 'water' || (mesh.parent && mesh.parent.type == 'unit');
+		return mesh.name == 'water' || (mesh.type == 'unit') || (mesh.parent && mesh.parent.type == 'unit');
 	});
 	if (!pickResult.hit) {
 		return;
@@ -293,7 +293,7 @@ window.setInterval(updateTrainProgress, 1000);
 window.setInterval(updateUnitCooldown, 1000);
 canvas.addEventListener('click', () => {
 	let pickResult = scene.pick(scene.pointerX, scene.pointerY, function(mesh) {
-		return mesh.name == 'water' || (mesh.parent && mesh.parent.type == 'unit');
+		return mesh.name == 'water' || (mesh.type == 'unit') || (mesh.parent && mesh.parent.type == 'unit');
 	});
 	if (!pickResult.hit) {
 		return;
@@ -595,6 +595,9 @@ $('#info-panel').on('keyup keypress', '#missile-power', function(e) {
 });
 
 window.addEventListener('keydown', (e) => {
+	if (e.target.name == 'body') {
+		return true;
+	}
 	if (e.keyCode == 27) { // esc
 		deleteHighlight();
 		UI.tool = 'pan';
@@ -796,8 +799,11 @@ canvas.addEventListener('contextmenu', () => {
 
 function moveUnit(a, b) {
 	let unit = a.unit;
+	unit.unfreezeWorldMatrix();
 	a.unit = null;
+	a.numTroops = 0;
 	b.unit = unit;
+	b.numTroops = unit.troops;
 	unit.lookAt(mapPosition(b.x, b.y));
 	unit.target = mapPosition(b.x, b.y);
 	unit.tileID = b.x + ',' + b.y;
@@ -813,12 +819,15 @@ function moveUnit(a, b) {
 function attackUnit(a, b, aRemain, bRemain) {
 	a.unit.lookAt(b.unit.position);
 	b.unit.lookAt(a.unit.position);
+	a.unit.freezeWorldMatrix();
+	b.unit.freezeWorldMatrix();
 	a.ready = UI.now() + 30;
 	battle(a.unit, b.unit, aRemain, bRemain);
 }
 function attackBuilding(a, b, aRemain, bRemain, fortRemain) {
 	a.unit.lookAt(b.pos);
-	UI.selectedUnit.ready = UI.now() + 30;
+	a.unit.freezeWorldMatrix();
+	a.unit.ready = UI.now() + 30;
 	siege(a.unit, b, aRemain, bRemain, fortRemain);
 }
 
@@ -829,9 +838,10 @@ scene.registerBeforeRender(function() {
 			World.units[u].movePOV(0,0,4/engine.fps);
 			let pos = getScreenCoords(World.units[u].position.add(v(0,10,0)));
 			let id = World.units[u].id;
-			$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
+			//$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
 			if (distance(World.units[u].position, World.units[u].target) < .2) {
 				World.units[u].target = null;
+				World.units[u].freezeWorldMatrix();
 				if (World.units[u].idle) {
 					World.units[u].idle();
 				}
@@ -915,6 +925,7 @@ function placeBuilding() {
 		Tiles[UI.selectedTile].constructionFinished = UI.now() + 30;
 		// remove dragger mesh
 		UI.building = null;
+		World.Sounds['upgrade2'].play();
 		if (UI.mesh &&  scene.meshes.indexOf(UI.mesh) > -1) {
 			UI.mesh.dispose();
 			UI.mesh = null;
@@ -1112,6 +1123,7 @@ $('#info-panel').on('click', '#collect-troops-button', function(e) {
 	}
 
 	$('#collect-troops-button').hide();
+	let tileID = UI.x + ',' + UI.y;
 	$.post('./deploytroops.php', {x: UI.x, y: UI.y}, function(e) {
 		let data = JSON.parse(e);
 		if (data.error) {
@@ -1122,9 +1134,9 @@ $('#info-panel').on('click', '#collect-troops-button', function(e) {
 		}
 		World.Sounds[randomArray(['unit1', 'unit2','unit3'])].play();
 		//tileHtml(UI.selectedTile);
-		if (Tiles[UI.selectedTile].readyMesh) {
-			Tiles[UI.selectedTile].readyMesh.dispose();
-			Tiles[UI.selectedTile].readyMesh = null;
+		if (Tiles[tileID].readyMesh) {
+			Tiles[tileID].readyMesh.dispose();
+			Tiles[tileID].readyMesh = null;
 		}
 		return;
 /*		let amount = Tiles[UI.selectedTile].trainAmount;
@@ -1145,7 +1157,6 @@ $('#info-panel').on('click', '#collect-troops-button', function(e) {
 		updateUnitCount(amount);*/
 	});
 });
-
 
 $('#info-panel').on('click', '#levelup-button', function(e) {
 	let cost = World.buildingData[Tiles[UI.selectedTile].building].cost;
@@ -1261,7 +1272,6 @@ $('#info-panel').on('click', '#settle-button', function(e) {
 		var data = JSON.parse(e);
 		addMessage('Settled at [' + data.x + ',' + data.y + ']');
 		Lamden.getCapital();
-
 	});
 });
 //$('#info-panel').on('click', '#colonize-button', function(e) {
@@ -1293,7 +1303,7 @@ function colonizeMode() {
 			for (let n in neighbors) {
 				if (!neighbors[n].owner) {
 					UI.availableTiles.push(neighbors[n].x + ',' + neighbors[n].y);
-					addModel(UI.tileHighlight, neighbors[n].pos.add(v(0,.1,0)), v(Math.PI/2,Math.PI / 6,0), 1);
+					addModel(UI.tileHighlight, neighbors[n].pos.add(v(0,.1,0)), v(Math.PI/2,0,0), 1);
 				}
 			}
 		}
@@ -1329,7 +1339,7 @@ function colonizeTile() {
 	Lamden.sendTx('buyTile', {x: UI.x, y: UI.y});
 	return;
 	Tiles[UI.selectedTile].owner = Lamden.wallet;
-	addModel(UI.friendlyTerritory, Tiles[UI.selectedTile].pos.add(v(0,.02,0)), v(0,Math.PI / 2,0), .22);
+	addModel(UI.friendlyTerritory, Tiles[UI.selectedTile].pos.add(v(0,.09,0)), v(0,0,0), .22);
 	tileHtml(UI.selectedTile);
 	updateSPSMeshes();
 	addMessage('Colonized [' + UI.selectedTile + ']', '#ccc');
@@ -1386,7 +1396,6 @@ $('#actions').on('click', '#buildings a', function(e) {
 	UI.mesh = World.assets[World.buildingData[id].mesh].clone('Drag');
 	UI.mesh.material = World.assets[World.buildingData[id].mesh].material.clone('Drag');
 	UI.mesh.material.alpha = .8;
-	UI.mesh.rotation.y = Math.PI / 6;
 	if (scene.meshes.indexOf(UI.mesh) == -1) {
 		scene.meshes.push(UI.mesh);
 	}
@@ -1441,6 +1450,7 @@ $('#info-panel').on('click', '#create-units button', function(e) {
 	updateUnitCount(num);
 });
 // deprecated
+/*
 $('#info-panel').on('click', '#create-tank button', function() {
 	if (Tiles[UI.selectedTile].unit && Tiles[UI.selectedTile].unit.troops + 1000 > (techHasResearched(7) ? 2000 : 1000)) {
 		addMessage('Tile full', '#f80');
@@ -1469,12 +1479,50 @@ $('#info-panel').on('click', '#create-ship button', function() {
 	addShip(UI.x, UI.y, UI.selectedTile, Lamden.wallet);
 	updateUnitCount(1000);
 });
+*/
 function addMessage(message, c) {
 	c = c || '#fff';
 	$('#chat-panel ul').append('<li style="color: ' + c + '">' + message + '</li>');
 	$('#loading-screen p').html(message);
-	$("#chat-panel").scrollTop($("#chat-panel")[0].scrollHeight);
+	$("#chat-panel ul").scrollTop($("#chat-panel ul")[0].scrollHeight);
 }
+$('#chat-panel form').submit(function(e) {
+	e.preventDefault();
+	if (!$('#chat-panel input[name=body]').val()) {
+		return;
+	}
+	$.post('./chat.php', {player: Lamden.wallet, body: $('#chat-panel input[name=body]').val()}, function(e) {
+		$('#chat-panel input[name=body]').val('');
+	});
+	return false;
+});
+$.get('./chat.php?lastid', function(e) {
+	UI.lastChatID = parseInt(e) || 0;
+	window.setInterval(function() {
+		$.get('chat.php?id=' + UI.lastChatID, function(e) {
+			let data = JSON.parse(e);
+			for (let i in data) {
+				var d = new Date(data[i].stamp * 1000);
+				var h = d.getHours();
+				var m = d.getMinutes();
+				if (m < 10) {
+					m = '0' + m;
+				}
+				if (h > 12) {
+					var date = (h - 12) + ':' + m + ' PM';
+				} else if (h == 0) {
+					var date = 12 + ':' + m + ' AM';
+				} else {
+					var date = h + ':' + m + ' AM';
+				}
+				addMessage('[' + date + '] ' + data[i].name + ': ' + data[i].body);
+				if (data[i].id > UI.lastChatID) {
+					UI.lastChatID = data[i].id;
+				}
+			}
+		});
+	}, 1000);
+});
 
 function checkTerritory() {
 	for (let t in Player.territory) {

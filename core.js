@@ -503,13 +503,14 @@ function updateParticle(t) {
 }
 function updateSPSMeshes() {
 	//return false;
-	for (id in updateSPS) {
+	for (var id in updateSPS) {
 		if (modelSPS[id] && modelSPS[id].mesh && !dynamicSPS[id]) {
 			modelSPS[id].dispose();
 		}
 		if (!dynamicSPS[id] || !modelSPS[id]) {
 			modelSPS[id] = new BABYLON.SolidParticleSystem('aaaSPS' + id, scene);
 			modelSPS[id].updateParticle = updateParticle;
+//			modelSPS[id].setParticles = updateParticle;
 			modelSPS[id].id = id;
 			shapeIDs[id] = {};
 			var c = 0;
@@ -533,16 +534,20 @@ function updateSPSMeshes() {
 			shadowRenderList.push(spsMesh);
 			spsMesh.receiveShadows = true;
 	//		if ((!spsMesh.material.reflectionTexture || !spsMesh.material.reflectionTexture.renderList)) {
-				reflectionRenderList.push(spsMesh);
+//				reflectionRenderList.push(spsMesh);
+				World.reflect.push(spsMesh);
 	//		}
 	//		if (water && water.material.refractionTexture) {
-				//water.material.refractionTexture.renderList.push(spsMesh);
+//				World.reflect.push(spsMesh);
 	//		}
 		}
+		var t0 = performance.now();
 		modelSPS[id].computeBoundingBox = true;
 		modelSPS[id].setParticles();
 		modelSPS[id].refreshVisibleSize();
 		modelSPS[id].mesh.freezeWorldMatrix();
+		var t1 = performance.now();
+		console.log(id + ':' + (t1 - t0));
 	}
 	updateSPS = {};
 }
@@ -557,3 +562,264 @@ function dumpMeshes() {
 		console.log(scene.meshes[m].name, scene.meshes[m].isWorldMatrixFrozen, scene.meshes[m].getTotalVertices());
 	}
 }
+
+
+// =========
+// Turbo SPS
+// =========
+// not in use atm
+var SPS = function(name, workerNb, scene) {
+    this.name = name;
+    this.scene = scene;
+    this.particleNb = 0;
+    // Tmp particle object to mask the array access
+    this.particle = {
+        idx: 0,                        // particle index
+        position: BABYLON.Vector3.Zero(),
+        rotation: BABYLON.Vector3.Zero(),
+        scaling: BABYLON.Vector3.Zero(),
+        velocity: BABYLON.Vector3.Zero(),
+        color: new BABYLON.Color4(1., 1., 1., 1.),
+        uvs: new BABYLON.Vector4(0., 0., 1., 1.),
+        alive: true,
+        isVisible: true
+    };
+
+    this.stride = 20;                      // stride in the transforms array
+    this.shiftInd = 0;                     // indice shift
+    this.transforms = undefined;           // particle transformations (posx, posy, posz, rotx, roty, rotz, scalx, scaly, scalz)
+    this.localPos = [];                    // mesh vertex local positions  (x, y, z) * particle shape nb of points
+    this.localNor = [];                    // mesh local normals
+    this.localUVs = [];                    // mesh local uvs
+    this.localCol = [];                    // mesh local colors
+    this.indices = [];                     // mesh indices
+    this.shapeLengths = [];                // length of each particle shape
+    this.pPosIndexes = [];                 // index of each particle in the positions array
+    this.pPos = 0;                         // current index
+    this.posBuffer= undefined;             // the vertex buffer
+    this.norBuffer = undefined;            // the normal buffer
+    this.uvsBuffer = undefined             // the uvs buffer
+    this.norShared = undefined;            // shared buffers for the worker communication
+    this.posShared = undefined;
+    this.mesh = undefined;
+
+    this.rotated = BABYLON.Vector3.Zero();
+    this.quaternion = new BABYLON.Vector4(0., 0., 0., 0.);
+    this.rotMatrix = new Array(10);
+    this.halfroll = 0.;
+    this.halfpitch = 0.;
+    this.halfyaw = 0.;
+    this.sinRoll = 0.;
+    this.cosRoll = 0.;
+    this.sinPitch = 0.;
+    this.cosPitch = 0.;
+    this.sinYaw = 0.;
+    this.cosYaw = 0.;
+
+    this.workerNb = workerNb || 2;
+    this.workers = [];
+    this.finishedWorkers = [];
+    this.workerURL = "spsProtoWorker-worker.js";
+    for (var w = 0; w < this.workerNb; w++) {
+        this.workers.push(new Worker(this.workerURL));
+        this.finishedWorkers.push(true);
+    }
+
+};
+
+SPS.prototype.updateParticle = function() { return; };
+
+SPS.prototype.addShape = function(mesh, nb) {
+    var meshInd = mesh.getIndices();
+    var meshPos = mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+    var meshNor = mesh.getVerticesData(BABYLON.VertexBuffer.NormalKind);
+    var meshUVs = mesh.getVerticesData(BABYLON.VertexBuffer.UVKind);
+    var meshCol = mesh.getVerticesData(BABYLON.VertexBuffer.ColorKind);
+    var l = (meshPos.length / 3)|0;
+
+    for (var m = 0; m < nb; m++) {
+        this.addElementsToRef(meshInd, this.shiftInd, this.indices);
+        this.addElementsToRef(meshPos, 0, this.localPos);
+        this.addElementsToRef(meshNor, 0, this.localNor,);
+        this.addElementsToRef(meshUVs, 0, this.localUVs);
+        if (meshCol) {
+            this.addElementsToRef(meshCol, 0, this.localCol);
+        }
+        this.shapeLengths.push(l);
+        this.shiftInd += l;
+        this.pPosIndexes.push(this.pPos);
+        this.pPos += l * 3;
+    }
+    this.particleNb += nb;
+};
+
+SPS.prototype.addElementsToRef = function(fromArray, shift, toArray) {
+    for (var i = 0; i < fromArray.length; i++) {
+        toArray.push(fromArray[i] + shift);
+    }
+};
+
+SPS.prototype.buildMesh = function() {
+    this.posShared = new Float32Array(new SharedArrayBuffer(this.localPos.length * Float32Array.BYTES_PER_ELEMENT));
+    this.norShared = new Float32Array(new SharedArrayBuffer(this.localNor.length * Float32Array.BYTES_PER_ELEMENT));
+    this.posBuffer = new Float32Array(this.localPos);
+    this.norBuffer = new Float32Array(this.localNor);
+
+    this.transforms = new Float32Array(new SharedArrayBuffer(this.stride * this.particleNb * Float32Array.BYTES_PER_ELEMENT));
+    // buffer init
+    for (var t = 0; t < this.transforms.length; t++) {
+        this.transforms[t] = 0.0;
+    }
+    for (var p = 0; p < this.posBuffer.length; p++) {
+        this.posShared[p] = this.posBuffer[p];
+        this.norShared[p] = this.norShared[p];
+    }
+
+    this.uvsBuffer = new Float32Array(this.localUVs);
+    if (this.localCol.length) {
+        this.colBuffer = new Float32Array(this.localCol);
+    }
+
+    var vertexData = new BABYLON.VertexData();
+    vertexData.indices = this.indices;
+    vertexData.positions = this.posBuffer;
+    vertexData.normals = this.norBuffer;
+    vertexData.uvs = this.uvsBuffer;
+    // colors to be done ...
+    var mesh = new BABYLON.Mesh(this.name, scene);
+    vertexData.applyToMesh(mesh, true);
+    this.mesh = mesh;
+
+    // Worker initialization
+    // pass the workers the local positions and normals once for all
+    // then share the normals and positions buffers
+    var range = (this.particleNb / this.workerNb)|0;
+    var sps = this;
+    for (var w = 0; w < this.workerNb; w++) {
+        var end = range * (w + 1);
+        end = (end < this.particleNb) ? end : this.particleNb - 1;
+        // worker initialization message
+        var initMsg = {
+            id: w,
+            start: range * w,
+            end: end,
+            localPos: this.localPos,
+            localNor: this.localNor,
+            shapeLengths: this.shapeLengths,
+            pPosIndexes: this.pPosIndexes,
+            stride: this.stride
+        };
+        this.workers[w].postMessage(initMsg);
+        // sharing buffers
+        this.workers[w].postMessage(this.posShared);    // share buffers
+        this.workers[w].postMessage(this.norShared);
+        this.workers[w].postMessage(this.transforms);
+
+        // register worker answer process
+        this.workers[w].onmessage = function(e) {
+            var id = e.data;
+            sps.finishedWorkers[id] = true;
+            sps.updateMesh();
+        };
+
+        this.workers[w].postMessage("c"); // initial computation order
+    }
+    return mesh;
+};
+
+// update the mesh vertex only when all workers have completed
+SPS.prototype.updateMesh = function() {
+    var done = true;
+    var w = 0;
+    for (w = 0; w < this.finishedWorkers.length; w++) {
+        done = done && this.finishedWorkers[w];
+    }
+    if (done) {
+        // update the positions/normals buffer from the shared buffer
+        for (var i = 0; i < this.posBuffer.length; i++) {
+            this.posBuffer[i] = this.posShared[i];
+            this.norBuffer[i] = this.norShared[i];
+        }
+        for (var w = 0; w < this.workers.length; w++) {
+            this.finishedWorkers[w] = false;
+            this.workers[w].postMessage("c");  // re-order computation
+        }
+    }
+};
+
+SPS.prototype.setParticles = function() {
+    var q = 0;          // index in the particle shape
+    var pIdx = 0;       // index in the transforms array
+    var x = 0.0;        // tmp x, y, z
+    var y = 0.0;
+    var z = 0.0;
+    var pPos = 0;       // particle index in the positions array
+
+    // Particle logical update
+    for (var p = 0; p < this.particleNb; p++) {
+        // get the current particle status
+        this.particle.idx = p;
+        pIdx = p * this.stride;                  // stride = 20
+        this.particle.position.x = this.transforms[pIdx];
+        this.particle.position.y = this.transforms[pIdx + 1];
+        this.particle.position.z = this.transforms[pIdx + 2];
+
+        this.particle.rotation.x = this.transforms[pIdx + 3];
+        this.particle.rotation.y = this.transforms[pIdx + 4];
+        this.particle.rotation.z = this.transforms[pIdx + 5];
+
+        this.particle.scaling.x = this.transforms[pIdx + 6];
+        this.particle.scaling.y = this.transforms[pIdx + 7];
+        this.particle.scaling.z = this.transforms[pIdx + 8];
+
+        this.particle.velocity.x = this.transforms[pIdx + 9];
+        this.particle.velocity.y = this.transforms[pIdx + 10];
+        this.particle.velocity.z = this.transforms[pIdx + 11];
+
+        this.particle.color.r = this.transforms[pIdx + 12];
+        this.particle.color.g = this.transforms[pIdx + 13];
+        this.particle.color.b = this.transforms[pIdx + 14];
+        this.particle.color.a = this.transforms[pIdx + 15];
+
+        this.particle.uvs.x = this.transforms[pIdx + 16];
+        this.particle.uvs.y = this.transforms[pIdx + 17];
+        this.particle.uvs.z = this.transforms[pIdx + 18];
+        this.particle.uvs.w = this.transforms[pIdx + 19];
+
+        // call to particle update function
+        this.updateParticle();
+
+        // restore the particle updated transformations
+        this.transforms[pIdx] = this.particle.position.x;
+        this.transforms[pIdx + 1] = this.particle.position.y;
+        this.transforms[pIdx + 2] = this.particle.position.z;
+
+        this.transforms[pIdx + 3] = this.particle.rotation.x;
+        this.transforms[pIdx + 4] = this.particle.rotation.y;
+        this.transforms[pIdx + 5] = this.particle.rotation.z;
+
+        this.transforms[pIdx + 6] = this.particle.scaling.x;
+        this.transforms[pIdx + 7] = this.particle.scaling.y;
+        this.transforms[pIdx + 8] = this.particle.scaling.z;
+
+        this.transforms[pIdx + 9] = this.particle.velocity.x;
+        this.transforms[pIdx + 10] = this.particle.velocity.y;
+        this.transforms[pIdx + 11] = this.particle.velocity.z;
+
+        this.transforms[pIdx + 12] = this.particle.color.r;
+        this.transforms[pIdx + 13] = this.particle.color.g;
+        this.transforms[pIdx + 14] = this.particle.color.b;
+        this.transforms[pIdx + 15] = this.particle.color.a;
+
+        this.transforms[pIdx + 16] = this.particle.uvs.x;
+        this.transforms[pIdx + 17] = this.particle.uvs.y;
+        this.transforms[pIdx + 18] = this.particle.uvs.z;
+        this.transforms[pIdx + 19] = this.particle.uvs.w;
+    }
+
+    // update the actual mesh positions anyway
+    this.mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, this.posBuffer, false, false);
+    this.mesh.updateVerticesData(BABYLON.VertexBuffer.NormalKind, this.norBuffer, false, false);
+
+};
+

@@ -13,7 +13,7 @@ if ($tile['owner']) {
 }
 $sql->q("INSERT INTO players (address, name, x, y) VALUES ('$owner', '$owner', $x, $y)");
 if ($sql->s("SELECT COUNT(*) FROM tiles WHERE x = $x AND y = $y")) {
-	$sql->q("UPDATE tiles SET owner = '$owner', building = 1, lastHarvest = UNIX_TIMESTAMP() WHERE x = $x AND y = $y");
+	$sql->q("UPDATE tiles SET owner = '$owner', building = 1, hp = 5000, lastHarvest = UNIX_TIMESTAMP() WHERE x = $x AND y = $y");
 } else {
 	$sql->q("INSERT INTO tiles (x, y, owner, building, hp, lastHarvest) VALUES ($x, $y, '$owner', 1, 5000, UNIX_TIMESTAMP())");
 }

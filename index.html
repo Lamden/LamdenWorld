@@ -7,7 +7,7 @@ html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-s
 #fps-counter { position: fixed; bottom: 5px; left: 0px; width: 200px; text-align: center; z-index: 8;
 	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
 
-#labels { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#labels { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
 #labels div { position: fixed; background: url(images/bg.jpg); padding: 5px; max-width: 200px; text-align: center;
 	border: 3px solid transparent; border-image: url(images/border.png) 6; box-shadow: inset 0 0 4px #000, inset 0 0 4px #000; }
 
@@ -50,6 +50,8 @@ button { color: #000; padding: 0px 20px; background: url(images/button2.png); ba
 	width: 150px; border: none; color: #fff; cursor: pointer; margin-left: 60px; font-size: 115%; margin-top: 15px;
 	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
 button:hover { background-color: #935; }
+#demolish-button { position: absolute; bottom: 10px; left: 30px; }
+
 #info-panel dt { float: left; }
 #info-panel dd { text-align: right; }
 
@@ -113,7 +115,7 @@ button:hover { background-color: #935; }
 <section id="chat-panel"><ul>
 	<li>Welcome to <img src="images/lamden.svg" style="width: 15px; height: 15px; "> LamdenWorld v0.1</li>
 </ul><form>
-<input type="text" name="body" autocomplete="off">
+<input type="text" name="body" autocomplete="off" placeholder="Say something...">
 </form></section>
 <section id="actions"></section>
 <section id="tabs">
@@ -155,7 +157,7 @@ camera.lowerRadiusLimit = 50;
 World.createWater({position: v(32, -.3, 32)});
 
 let building = new BABYLON.MeshBuilder.CreateBox('building', {width: 6, height: 2, depth: 6}, scene);
-building.material = new BABYLON.StandardMaterial('asdas', scene);
+building.material = new BABYLON.StandardMaterial('Temp Building', scene);
 building.position.y = -100;
 
 function mapPosition(x, y) {
@@ -239,7 +241,9 @@ const Lamden = {
 				changePlayerResource(i, data.resources[i]);
 			}
 			for (let i in data.research) {
-				World.Technologies[i].started = data.research[i];
+				if (World.Technologies[i]) {
+					World.Technologies[i].started = data.research[i];
+				}
 			}
 			updateUnitCount(data.troops);
 			window.setInterval(function() {
@@ -269,7 +273,7 @@ const Lamden = {
 	updatePlayer() {
 		$.get('./player.php?owner=' + Lamden.wallet, function(e) {
 			data = JSON.parse(e);
-			console.log('Get Player Data: ' + e, data);
+			//console.log('Get Player Data: ', data);
 			for (var i in data.resources) {
 				if (data.resources[i] - (Player.Resources[i] || 0) != 0) {
 					changePlayerResource(i, data.resources[i] - (Player.Resources[i] || 0));
@@ -359,7 +363,7 @@ function loadAssets() {
 		}
 		//scene.getMeshByName('Base_mesh').scaling.scaleInPlace(.1);
 		//scene.getMeshByName('Soldier_01_mesh').scaling.scaleInPlace(.1);
-		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?29', scene, function(meshes) {
+		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?30', scene, function(meshes) {
 			for (let m in meshes) {
 				meshes[m].position.scaleInPlace(.22);
 				meshes[m].position.y = 1;
@@ -455,16 +459,16 @@ function renderLoop() {
 		shadowMesh.position = camera.target.position.clone();
 		//sun.position = torch.position.add(v(camera.radius * 1.6,2,0));
 	}
+	scene.render();
+
+}
+window.setInterval(function() {
 	$('#fps-counter').text('(' + engine.drawCalls + ' draw calls) ' + Math.round(engine.fps) + ' fps');
 	let tile = pos2tile(v(camera.target.position.x, camera.target.position.z));
 	document.getElementById('minimap').contentWindow.scrollTo(
 		512 - 100 + tile.x * 2,
 		512 - 100 - tile.y * 2
 	);
-
-
-	scene.render();
-
-}
+}, 500);
 
 </script>

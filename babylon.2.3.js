@@ -2896,6 +2896,24 @@ var BABYLON;
             }
             return new Curve3(hermite);
         };
+        Curve3.CreateCatmullRomSpline = function (points, nbPoints) {
+            var totalPoints = new Array();
+            totalPoints.push(points[0].clone());
+            Array.prototype.push.apply(totalPoints, points);
+            totalPoints.push(points[points.length - 1].clone());
+            var catmullRom = new Array();
+            var step = 1.0 / nbPoints;
+            for (var i = 0; i < totalPoints.length - 3; i++) {
+                var amount = 0.0;
+                for (var c = 0; c < nbPoints; c++) {
+                    catmullRom.push(Vector3.CatmullRom(totalPoints[i], totalPoints[i + 1], totalPoints[i + 2], totalPoints[i + 3], amount));
+                    amount += step;
+                }
+            }
+            i--;
+            catmullRom.push(Vector3.CatmullRom(totalPoints[i], totalPoints[i + 1], totalPoints[i + 2], totalPoints[i + 3], amount));
+            return new Curve3(catmullRom);
+        };
         Curve3.prototype.getPoints = function () {
             return this._points;
         };

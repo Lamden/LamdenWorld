@@ -5,26 +5,26 @@ const World = {
 	offset: v(0,0),
 	lastOffset: v(1,1),
 	props: [],
+	// some random but predictable values for map rendering
 	random: [.59,.89,.38,.82,.41,.20,.58,.65,.68,.94,.46,.67,.19,.88,.34,.62,.15,.68,.97,.3,.50,.77,.74,.23,.25,.78,.68,.38,.71,.83,.72,.29,.65,.4,.16,.66,.88,.13,.11,.7,.53,.27,.32,.74,.98,.18,.50,.35,.78,.98,.10,.95,.89,.89,.9,.77,.25,.8,.45,.67,.63,.8,.95,.63,.61,.86,.42,.23,.61,.7,.11,.62,.5,.12,.25,.11,.33,.64,.86,.63,.97,.27,.32,.10,.62,.89,.91,.62,.27,.68,.30,.10,.45,.5,.78,.99,.25,.15,.91,.51],
 	buildingData: {
 		1: {name: 'Capital', requiresTile: null, produces: 0, productionSpeed: 1, hp: 5000, cost: {7: 300, 11: 500}, mesh: 'Capital', meshScale: .22, description: ''},
-//		1: {name: 'Farm', requiresTile: 'grass', produces: 1, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 100}, mesh: 'Farm1'},
-//		2: {name: 'Lumber Camp', requiresTile: 'forest', produces: 2, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 100}},
+		2: {name: 'Wall', requiresTile: 'grass', hp: 5000, cost: {0: 300, 1: 1000}, mesh: 'Wall', meshScale: .22, description: 'To prevent illegal immigrants. '},
 		3: {name: 'Ore Mine', requiresTile: 'all', produces: 2, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 200}, icon: 'mine', mesh: 'Mine1', meshScale: .22, description: 'Produces ore'},
 		4: {name: 'Oil Well', requiresTile: 'all', produces: 3, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 200}, icon: 'pumpjack', mesh: 'Pumpjack', meshScale: .22, description: 'Produces crude'},
 		5: {name: 'Rock Mine', requiresTile: 'all', produces: 1, productionSpeed: 1, hp: 1000, cost: {0: 1000, 2: 200}, icon: 'mine', mesh: 'Mine1', meshScale: .22, description: 'Produces rock'},
 		//6: {name: 'Pumpjack', requiresTile: 'desert', requiresTech: 2, produces: 6, productionSpeed: 1, hp: 1000, cost: {4: 800}},
-		7: {name: 'Power Plant', requiresTile: 'grass', requiresTech: 1, produces: 0, productionSpeed: .2, hp: 1000, cost: {3: 1000, 4: 1000, 5: 1000}, icon: 'powerplant', mesh: 'Powerplant2', meshScale: .22, smoke: v(2.6,2,-.4), description: 'Produces energy'},
-		8: {name: 'Barracks', requiresTile: 'grass', hp: 1000, cost: {4: 100}, icon: 'barracks', mesh: 'Barracks2', meshScale: .22, description: 'Produces units at a smaller scale'},
+		7: {name: 'Power Plant', requiresTile: 'grass', /* requiresTech: 1, */ produces: 0, productionSpeed: .2, hp: 1000, cost: {3: 1000, 4: 1000, 5: 1000}, icon: 'powerplant', mesh: 'Powerplant2', meshScale: .22, smoke: v(2.6,2,-.4), description: 'Produces energy'},
+		//8: {name: 'Barracks', requiresTile: 'grass', hp: 1000, cost: {4: 100}, icon: 'barracks', mesh: 'Barracks2', meshScale: .22, description: 'Produces units at a smaller scale'},
 		9: {name: 'Tank Factory', /* requiresTech: 4, */ requiresTile: 'grass', hp: 1000, cost: {4: 1000}, icon: 'factory', hp: 1000, mesh: 'Factory', meshScale: .22, description: 'Produces units at a larger scale'},
 		10: {name: 'Engineer', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 500}, icon: 'engineer', mesh: 'NGon007', meshScale: .22, description: 'Research advanced technologies'},
 		11: {name: 'Refinery', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, icon: 'refinery', mesh: 'Refinery2', meshScale: .22, smoke: v(3.5,12,1), description: 'Refines raw resources into refined resources'},
 		12: {name: 'Dock', requiresTile: 'water', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, icon: 'dock', mesh: 'Dock1', meshScale: .22, description: 'Produces naval units'},
-		13: {name: 'Marketplace', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, description: ''},
+		//13: {name: 'Marketplace', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, description: ''},
 		14: {name: 'Missile Silo', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, icon: 'silo', mesh: 'Silo2', meshScale: .22, description: ''},
 		15: {name: 'Bunker', requiresTile: 'grass', hp: 5000, cost: {0: 1000, 2: 100, 4: 100}, icon: 'bunker', mesh: 'Bunker', meshScale: .22, description: 'Can house 5000 additional units compared to other tiles. '},
-		16: {name: 'Missile Defense System', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, mesh: 'Silo2', meshScale: .22, description: 'Defends your territory in a 5 tile radius from missile attacks. Succes rate 50%. '},
-		17: {name: 'Artillery Tower', requiresTile: 'grass', hp: 500, power: 500, cost: {0: 1000, 2: 100, 4: 100}, description: 'Simple defensive structure to withstand small attacks in a 5 tile radius. '},
+		//16: {name: 'Missile Defense System', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, mesh: 'Silo2', meshScale: .22, description: 'Defends your territory in a 5 tile radius from missile attacks. Succes rate 50%. '},
+		//17: {name: 'Artillery Tower', requiresTile: 'grass', hp: 500, power: 500, cost: {0: 1000, 2: 100, 4: 100}, description: 'Simple defensive structure to withstand small attacks in a 5 tile radius. '},
 	},
 	Conversions: {
 		1: {name: 'Smelt Ore to Iron', requiresLevel: 1, consumes: 2, produces: 4, speed: 1, capacity: 100},
@@ -95,8 +95,8 @@ const World = {
 		upgrade2: new BABYLON.Sound('upgrade2', 'sounds/upgrade2.mp3', scene, null, {volume: .3}),
 	},
 	Technologies: {
-		1: {name: 'Coal', researchedAt: 1, duration: 300, cost: {1: 1000, 4: 500}, description: 'Allows building of power plants and unlocks other techs. '},
-		2: {name: 'Oil', researchedAt: 1, requiresTech: 1, duration: 300, cost: {1: 1000, 8: 1500}, description: 'Allows building of oil wells'},
+		//1: {name: 'Coal', researchedAt: 1, duration: 300, cost: {1: 1000, 4: 500}, description: 'Allows building of power plants and unlocks other techs. '},
+		//2: {name: 'Oil', researchedAt: 1, requiresTech: 1, duration: 300, cost: {1: 1000, 8: 1500}, description: 'Allows building of oil wells'},
 		3: {name: 'Armored Vehicles', researchedAt: 10, duration: 300, cost: {1: 1000, 4: 500}, description: 'Allows construction of armored vehicles. '},
 		4: {name: 'Ballistics', researchedAt: 10, requiresTech: 3, duration: 300, cost: {1: 1000, 4: 1000}, description: 'Allows construction of armored vehicles. '},
 		5: {name: 'Scopes', researchedAt: 8, duration: 300, cost: {1: 1000, 4: 500}, description: 'Increases your units damage output by 10%'},
@@ -115,6 +115,8 @@ const World = {
 		18: {name: 'Rebar II', researchedAt: 10, duration: 300, cost: {1: 1000, 11: 5000}, description: 'Increases hp of new buildings by 100%. '},
 		19: {name: 'Power Effeciency', researchedAt: 1, duration: 300, cost: {0: 1000, 8: 500}, description: 'Reduces energy cost for unit actions by 50%. '},
 		20: {name: 'Improved Storage', researchedAt: 10, duration: 300, cost: {0: 1000, 11: 2000}, description: 'Increases capacity of mines and oilwell by 100%. '},
+		21: {name: 'Nuclear Fusion', researchedAt: 1, duration: 300, cost: {10: 5000, 19: 5000}, description: 'Increases Energy production by 100%. '},
+
 	},
 	tileTypes: {
 		'water': {name: 'Water', yield: [0,0,0,0]},
@@ -152,11 +154,19 @@ const World = {
 		if (!tile) {
 			return null;
 		}
-		var tiles = []
-		for (var t in Tiles) {
-			var d = distance(tile.pos, Tiles[t].pos);
+		// prepopulate array with possible neighbors to prevent having to loop through whole worldmap
+		var possibleNeighbors = [];
+		for (var i = x - 2; i <= x + 2; i++) {
+			for (var j = y - 2; j <= y + 2; j++) {
+				possibleNeighbors.push((i + ',' + j));
+			}
+		}
+
+		var tiles = [];
+		for (var t in possibleNeighbors) {
+			var d = distance(tile.pos, Tiles[possibleNeighbors[t]].pos);
 			if (d > 0 && d < 9.5) {
-				tiles.push(Tiles[t]);
+				tiles.push(Tiles[possibleNeighbors[t]]);
 			}
 		}
 		return tiles;
@@ -199,6 +209,7 @@ const World = {
 		dynamicSPS['Trees1'] = 300;
 		dynamicSPS['Rock1'] = 150;
 		dynamicSPS['Rock2'] = 150;
+		dynamicSPS['Grass2'] = 2000;
 		this.drawWorld();
 		window.setTimeout(function() {
 			for (let m in scene.materials) {
@@ -271,7 +282,13 @@ const World = {
 						let id = log[i].x + ',' + log[i].y;
 						let id2 = log[i].x2 + ',' + log[i].y2;
 						let type = log[i].type;
-						console.log(id, id2, Tiles[id].unit);
+						console.log('Event', log[i]);
+						if (!Tiles[id]) {
+							Tiles[id] = {type: 'water', x: log[i].x, y: log[i].y, pos: mapPosition(log[i].x, log[i].y)};
+						}
+						if (!Tiles[id2]) {
+							Tiles[id2] = {type: 'water', x: log[i].x2, y: log[i].y2, pos: mapPosition(log[i].x2, log[i].y2)};
+						}
 						if (type == 'colonize') {
 							Tiles[id].owner = log[i].var1;
 							let model = log[i].var1 == Lamden.wallet ? UI.friendlyTerritory : UI.enemyTerritory;
@@ -286,16 +303,33 @@ const World = {
 						}
 						if (type == 'build') {
 							if (Tiles[id].mesh) {
+								if (shadowRenderList.indexOf(Tiles[id].mesh) > -1) {
+									shadowRenderList.splice(shadowRenderList.indexOf(Tiles[id].mesh), 1);
+								}
 								Tiles[id].mesh.dispose();
+								Tiles[id].mesh = null;
 							}
 							setBuildingData(Tiles[id], log[i].var1, Tiles[id].owner,  log[i].var2);
 						}
+						if (type == 'delete' && log[i].var1 == 'building') {
+							if (Tiles[id].mesh) {
+								if (shadowRenderList.indexOf(Tiles[id].mesh) > -1) {
+									shadowRenderList.splice(shadowRenderList.indexOf(Tiles[id].mesh), 1);
+								}
+								Tiles[id].mesh.dispose();
+							}
+							Tiles[id].building = 0;
+							Tiles[id].level = 1;
+							Tiles[id].currentHP = 0;
+							Tiles[id].maxHP = 0;
+						}
 						if (type == 'train') {
-							let amount = log[i].var1;
+							let amount = parseInt(log[i].var1);
 							Tiles[id].collected = true;
 							Tiles[id].trainAmount = null;
+							Tiles[id].numTroops = amount;
 							if (Tiles[id].unit) {
-								Tiles[id].unit.troops += parseInt(amount);
+								Tiles[id].unit.troops += amount;
 								let unitID = Tiles[id].unit.id;
 								$('#' + unitID).html(formatName(Tiles[id].unit.owner) + '<br>' + Tiles[id].unit.troops);
 							} else {
@@ -316,20 +350,50 @@ const World = {
 							if (!Tiles[id].unit) {
 								continue;
 							}
-
+							if (log[i].var1) { // split off units
+								let amount = parseInt(log[i].var1);
+								Tiles[id].unit.troops -= amount;
+								Tiles[id].numTroops -= amount;
+								$('#' + Tiles[id].unit.id).html(formatName(Tiles[id].unit.owner) + '<br>' + Tiles[id].unit.troops);
+								if (Tiles[id2].unit && Tiles[id2].unit.owner == Tiles[id].unit.owner) { // split and merge with other
+									Tiles[id2].unit.troops += amount;
+									Tiles[id2].numTroops += amount;
+									$('#' + Tiles[id2].unit.id).html(formatName(Tiles[id2].unit.owner) + '<br>' + Tiles[id2].unit.troops);
+								} else {
+									if (amount < 1000 && Tiles[id].type != 'water') {
+										addUnit(amount, mapPosition(log[i].x2, log[i].y2), id2, Tiles[id].unit.owner);
+									} else if (amount > 1000 && Tiles[id].type != 'water') {
+										let tank = addTank(log[i].x2, log[i].y2, id2, Tiles[id].unit.owner);
+										tank.troops = amount;
+										$('#' + tank.id).html(formatName(tank.owner) + '<br>' + tank.troops);
+									} else if (Tiles[id].type == 'water') {
+										let ship = addShip(log[i].x2, log[i].y2, id2, Tiles[id].unit.owner);
+										ship.troops = amount;
+										$('#' + ship.id).html(formatName(ship.owner) + '<br>' + ship.troops);
+									}
+								}
+								if (Tiles[id].unit.owner == Lamden.wallet) {
+									addMessage('Units split. now counting ' + Tiles[id].unit.troops + ' and ' + Tiles[id2].unit.troops);
+								}
+								continue;
+							}
 							if (Tiles[id2].unit && Tiles[id2].unit.owner == Tiles[id].unit.owner) { // merge units
 								let troops = parseInt(Tiles[id].unit.troops);
 								let unitID = Tiles[id].unit.id;
 								$('#' + unitID).remove();
 								Tiles[id].unit.dispose();
+								Tiles[id].unit = null;
+								Tiles[id].numTroops = 0;
 								Tiles[id2].unit.troops += troops;
 								unitID = Tiles[id2].unit.id;
 								$('#' + unitID).html(formatName(Tiles[id2].unit.owner) + '<br>' + Tiles[id2].unit.troops);
-								addMessage('Units merged. now counting ' + Tiles[id2].unit.troops);
-								UI.selectedUnit = Tiles[id].unit; // change selection to
+								if (Tiles[id2].unit.owner == Lamden.wallet) {
+									addMessage('Units merged. now counting ' + Tiles[id2].unit.troops);
+								}
+								UI.selectedUnit = Tiles[id2].unit; // change selection to
 								UI.selectedUnit.ready = UI.now() + 30;
 								$('#info-panel').hide();
-								return;
+								continue;
 							}
 							moveUnit(Tiles[id], Tiles[id2]);
 						}
@@ -352,7 +416,9 @@ const World = {
 							tileHtml(UI.selectedTile);
 						}
 					}
-				});
+				}).fail(function() {
+			addMessage('Cannot connect to server', '#f88');
+			});
 			}, 1000);
 		});
 
@@ -393,7 +459,7 @@ const World = {
 
 		let w = new watermaterial('water', scene, sun);
 		w.reflectionTexture.mirrorPlane = new BABYLON.Plane(0, -1, 0, 0);
-		w.reflectionTexture.renderList = World.reflect;
+		//w.reflectionTexture.renderList = World.reflect;
 		w.alpha = 1;
 		w.waterColor = color(.6,1,1);
 		w.waveHeight = .01;
@@ -445,7 +511,13 @@ const World = {
 				if (distance(camera.target.position, pos) > drawDistance) {
 					continue;
 				}
-				if (c[1] > 64) {
+				if (c[1] > 64) { // land
+					// default tile type is water, so any unit spawned because of multiplayer events outside of viewing range
+					// turn up as ship, delete and display correct unit now that its land-type is loaded.
+					if (Tiles[id].type == 'water' && Tiles[id].unit) {
+						Tiles[id].unit.dispose();
+						Tiles[id].unit = null;
+					}
 					// random value used for giving each tile a distinct color/rotation/model
 					let r = World.random[Math.abs(x * 256 + y) % 100];
 					if (c[1] > 192) { // desert
@@ -505,27 +577,20 @@ const World = {
 						}
 						Tiles[id].type = 'grass';
 					}
-					if (Tiles[id].owner == Lamden.wallet) {
-						addModel(UI.friendlyTerritory, Tiles[id].pos.add(v(0,.09,0)), v(0,0,0), .22);
-					}
-					if (Tiles[id].owner && Tiles[id].owner != Lamden.wallet) {
-						addModel(UI.enemyTerritory, Tiles[id].pos.add(v(0,.09,0)), v(0,0,0), .22);
-					}
-					if (Tiles[id].fortification && !scene.getMeshByName('Fortification' + x + ',' + y)) {
-						Tiles[id].fortMesh = addFort(x, y, Tiles[id].owner);
-					}
-					if (0 && c[1] == 64) { // unit
-						if (Math.random() < .4) {
-							//addTank(x, y, id, 'enemy');
-						} else {
-							//addUnit(Math.round(Math.random() * 20), mapPosition(x, y), id, 'enemy');
-						}
-					}
 				}
+
 				if (Tiles[id].building > 0) {
 					addBuilding(Tiles[id]);
 				}
-
+				if (Tiles[id].owner == Lamden.wallet) {
+					addModel(UI.friendlyTerritory, Tiles[id].pos.add(v(0,.09,0)), v(0,0,0), .22);
+				}
+				if (Tiles[id].owner && Tiles[id].owner != Lamden.wallet) {
+					addModel(UI.enemyTerritory, Tiles[id].pos.add(v(0,.09,0)), v(0,0,0), .22);
+				}
+				if (Tiles[id].fortification && !scene.getMeshByName('Fortification' + x + ',' + y)) {
+					Tiles[id].fortMesh = addFort(x, y, Tiles[id].owner);
+				}
 				if (Tiles[id].numTroops && !Tiles[id].unit && Tiles[id].numTroops < 1000 && Tiles[id].type != 'water') {
 					addUnit(Tiles[id].numTroops, mapPosition(Tiles[id].x, Tiles[id].y), id, Tiles[id].troopOwner);
 				} else if (Tiles[id].numTroops && !Tiles[id].unit && Tiles[id].type != 'water') {
@@ -554,6 +619,10 @@ Player = {
 
 function addBuilding(tile) {
 	var data = World.buildingData[tile.building];
+	if (!data) {
+		console.warn('Building not found: ' + tile.building);
+		return;
+	}
 	if (tile.mesh && tile.mesh.buildingID != tile.building) {
 		shadowRenderList.splice(shadowRenderList.indexOf(tile.mesh), 1);
 		tile.mesh.dispose();
@@ -773,6 +842,9 @@ function addShip(x, y, id, owner) {
 	return ship;
 }
 scene.registerBeforeRender(function() {
+	if (!UI.settings.namplates) {
+		return;
+	}
 	if (camera.inertialAlphaOffset == 0 && camera.inertialBetaOffset == 0 && camera.inertialRadiusOffset == 0 && camera.inertialPanningX == 0 && camera.inertialPanningY == 0) {
 		return;
 	}
@@ -781,7 +853,7 @@ scene.registerBeforeRender(function() {
 		let id = World.units[u].id;
 		let pos = getScreenCoords(World.units[u].position.add(v(0,10,0)));
 		if (document.getElementById(id)) {
-			//$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
+			$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
 		}
 	}
 });
@@ -892,6 +964,13 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 	$('#' + a.id).html(formatName(a.owner) + '<br>' + a.troops);
 	b.fortification = bFort;
 	b.currentHP = bRemain;
+	if (!b.mesh && !b.fort) {
+		b.owner = null;
+		addMessage('Ownership released [' + b.x + ',' + b.y + ']');
+		meshTransformationData = {};
+		World.drawWorld(true);
+		return;
+	}
 	let explosion1 = particles(b.mesh, 'explosion');
 	explosion1.start();
 	let explosion2 = particles(a, 'explosion');
@@ -938,14 +1017,18 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 	if (b.fortification <= 0 && b.fortMesh) {
 		addMessage('Fortification destroyed [' + b.x + ',' + b.y + ']');
 		window.setTimeout(function() {
-			b.fortMesh.dispose();
+			if (shadowRenderList.indexOf(b.fortMesh)  > -1) {
+				b.fortMesh.dispose();
+			}
 			b.fortMesh = null;
 		}, 2000);
 	}
 	if (b.currentHP <= 0 && b.mesh) {
 		addMessage('Building destroyed [' + b.x + ',' + b.y + ']');
 		b.building = 0;
-		shadowRenderList.splice(shadowRenderList.indexOf(b.mesh), 1);
+		if (shadowRenderList.indexOf(b.mesh)  > -1) {
+			shadowRenderList.splice(shadowRenderList.indexOf(b.mesh), 1);
+		}
 		window.setTimeout(function() {
 			b.mesh.dispose();
 			b.mesh = null;
@@ -954,9 +1037,6 @@ function siege(a, b, aRemain, bRemain, bFort) { // a should be attacking unit, b
 	if (b.currentHP <= 0 && b.fortification <= 0) {
 		b.owner = null;
 		addMessage('Ownership released [' + b.x + ',' + b.y + ']');
-//		if (b.owner == Lamden.wallet) {
-//			addMessage('You acquired [' + b.x + ',' + b.y + ']!', '#8f8');
-//		}
 		meshTransformationData = {};
 		World.drawWorld(true);
 		return;

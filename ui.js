@@ -1,10 +1,5 @@
-UI = {
+const UI = {
 	tool: 'pan',
-	tools: {
-		'barracks': {mesh: 'building'},
-		'factory': {mesh: 'building'},
-		'farm': {mesh: 'Farm1'},
-	},
 	selectedTile: null,
 	tooltipMesh: null,
 	// returns unix timestamp
@@ -15,18 +10,9 @@ UI = {
 		return a.substr(a, 0, 10) + '...';
 	},
 	settings: {
-		_increaseCameraZoom: false,
-		get increaseCameraZoom() {
-			return this._increaseCameraZoom;
-		},
-		set increaseCameraZoom(b) {
-			this._increaseCameraZoom = b;
-			camera.upperRadiusLimit = b ? 120 :85;
-			World.water.dispose();
-			World.createWater({position: v(32, -.3, 32)});
-			drawWorld(true);
-		}
-	}
+		nameplates: false,
+		reflections: false,
+	},
 }
 // Resize
 window.addEventListener('resize', () => {
@@ -62,7 +48,7 @@ canvas.addEventListener('mousemove', (e) => {
 		}
 	}
 
-
+	// hover over unit
 	if (mesh.type  == 'unit') {
 		UI.tileHover.position.y = -100;
 		UI.hover = mesh;
@@ -82,8 +68,16 @@ canvas.addEventListener('mousemove', (e) => {
 	let tile = pos2tile(v(point.x, point.z));
 	let id = (tile.x) + ',' + (tile.y);
 	UI.tileHover.position = mapPosition(tile.x, tile.y).add(v(0,.06,0));
+
+	// launch missile
 	if (UI.launchMissile) {
 		UI.tileTarget.position = mapPosition(tile.x, tile.y).add(v(0,.03,0));
+		let a = v(tile.x, tile.y);
+		let b = v(Tiles[UI.selectedUnit.tileID].x, Tiles[UI.selectedUnit.tileID].y);
+		html += '<p>Distance: ' + World.offset_distance(a, b) + ' tiles</p>';
+		html += '<p>Silo Max Range: ' + (3 + Tiles[UI.selectedTile].level) + ' tiles</p>';
+		$('#tooltip').show().html(html).css({left: scene.pointerX + 10, top: scene.pointerY + 10});
+		return;
 	} else {
 		UI.tileTarget.position.y = -100;
 	}
@@ -107,6 +101,7 @@ canvas.addEventListener('mousemove', (e) => {
 			html = 'Click to colonize this tile';
 			UI.mesh.material.diffuseColor = color(0,1,0);
 		}
+		html += '<br>Esc or right-click to cancel';
 		$('#tooltip').show().html(html).css({left: scene.pointerX + 10, top: scene.pointerY + 10});
 		return;
 	}
@@ -132,13 +127,15 @@ canvas.addEventListener('mousemove', (e) => {
 		} else {
 			html += 'Left-click to place building here. ';
 		}
+		html += '<br>Esc or right-click to cancel';
 		$('#tooltip').show().html(html).css({left: scene.pointerX + 10, top: scene.pointerY + 10});
 		return;
 	}
 
+	// hover over tile
 	let html = '';
 	if (Tiles[id]) {
-		if (Tiles[id].building) {
+		if (Tiles[id].building && World.buildingData[Tiles[id].building]) {
 			html += '<h3>[' + tile.x + ',' + tile.y + '] ' + World.buildingData[Tiles[id].building].name + '</h3>';
 		} else {
 			html += '<h3>[' + tile.x + ',' + tile.y + '] ' + World.tileTypes[Tiles[id].type].name + '</h3>';
@@ -149,14 +146,30 @@ canvas.addEventListener('mousemove', (e) => {
 		if (Tiles[id].unit) {
 			html += '<p>Troops: ' + Tiles[id].unit.troops + '</p>';
 		}
-		if (UI.selectedUnit && UI.selectedUnit.owner) {
+		if (UI.selectedUnit && !UI.selectedUnit.target && UI.selectedUnit.owner == Lamden.wallet) {
 			let unitPos = v(Tiles[UI.selectedUnit.tileID].x, Tiles[UI.selectedUnit.tileID].y);
 			let tilePos = v(Tiles[id].x, Tiles[id].y);
-			let d = World.offset_distance(unitPos, tilePos);
-			if (d <= custom.moveDistance(UI.selectedUnit.troops)) {
+			if (UI.path.dispose) {
+				UI.path.dispose();
+				UI.path = {};
+			}
+			if ((!Tiles[id].owner || Tiles[id].owner == Lamden.wallet) && (!Tiles[id].unit || Tiles[id].unit.owner == Lamden.wallet)) {
+				renderPath(pathFinding(unitPos, tilePos));
+			}
+			//let d = World.offset_distance(unitPos, tilePos);
+			//if (d <= custom.moveDistance(UI.selectedUnit.troops)) {
+			if (UI.path.tiles && UI.path.tiles.length < custom.moveDistance(UI.selectedUnit.troops)) {
+				let d = UI.path.tiles.length - 1;
 				html += d + ' tiles away. Costs ' + Math.ceil(d * UI.selectedUnit.troops * (techHasResearched(19) ? .5 : 1)) + ' energy to move here; right-click to move to this tile. ';
+			} else if ((Tiles[id].owner && Tiles[id].owner != Lamden.wallet) || (Tiles[id].unit && Tiles[id].unit.owner != Lamden.wallet)) {
+				let d = World.offset_distance(Tiles[UI.selectedUnit.tileID], Tiles[id]);
+				if (d > custom.attackDistance()) {
+					html += 'Too far to attack';
+				} else {
+					html += 'Attack, costs ' + Math.ceil(d * UI.selectedUnit.troops * (techHasResearched(19) ? .5 : 1)) + ' energy to attack; right-click to attack. ';
+				}
 			} else {
-				html += 'Too far away to move here';
+				html += 'Cannot move here';
 			}
 		}
 
@@ -220,25 +233,37 @@ function updateResearchProgress() {
 	let progress = current / tech.duration;
 	$('#research-progress progress').attr('value', progress * 100);
 }
+function isRefining(tile) {
+	return tile.convertAmount && tile.lastHarvest + custom.refineryDuration(tile.level, tile.convertAmount) >= UI.now() && !tile.collected;
+}
+function conversionFinished(tile) {
+	//tile = Tiles[tile];
+	if (!tile || tile.building != 11 || tile.collected) {
+		return false;
+	}
+	let duration = custom.refineryDuration(tile.level, tile.convertAmount);
+	if (tile.lastHarvest + duration < UI.now()) {
+		return true;
+	}
+	return false;
+}
+
 function updateConversionProgress() {
 	if (!UI.selectedTile || Tiles[UI.selectedTile].owner != Lamden.wallet) {
 		return;
 	}
 	let tile = Tiles[UI.selectedTile];
-	let level = tile.level;
-	let now = UI.now();
-	let min = tile.lastHarvest;
-	let current = now - tile.lastHarvest;
-	let progress = current / custom.refineryDuration(level, tile.convertAmount);
+	let current = UI.now() - tile.lastHarvest;
+	let progress = current / custom.refineryDuration(tile.level, tile.convertAmount);
 	if (tile.collected || !conversionFinished(tile)) {
 		$('#collect-button').hide();
 	}
-	if (!tile.convertAmount || tile.lastHarvest + custom.refineryDuration(level, tile.convertAmount) < now && tile.collected) {
+	if (!isRefining(tile) && tile.collected) {
 		$('#conversion-progress').hide();
 		$('#conversion-form').show();
 		return;
 	}
-	if (tile.lastHarvest + custom.refineryDuration(level, tile.convertAmount) < now && !tile.collected) {
+	if (conversionFinished(tile)) {
 		$('#collect-button').show();
 	}
 	$('#conversion-progress').show();
@@ -248,17 +273,26 @@ function updateConversionProgress() {
 function isTraining(tile) {
 	return tile.trainAmount && tile.lastHarvest + custom.trainDuration(tile) > UI.now() && !tile.collected;
 }
+function trainingFinished(tile) {
+	if (!tile || [8,9,12].indexOf(tile.building) == -1) { // check if barracks
+		return false;
+	}
+	if (tile.collected) {
+		return false;
+	}
+	let now = UI.now();
+	if (tile.lastHarvest + custom.trainDuration(tile) < now) {
+		return true;
+	}
+	return false;
+}
 function updateTrainProgress() {
 	if (!UI.selectedTile || Tiles[UI.selectedTile].owner != Lamden.wallet) {
 		return;
 	}
 	let tile = Tiles[UI.selectedTile];
-	let level = tile.level;
-	let now = UI.now();
-	let min = tile.lastHarvest;
-	let current = now - tile.lastHarvest; // time passed in seconds since starting training
-	let duration = custom.trainDuration(tile);
-	let progress = current / duration;
+	let current = UI.now() - tile.lastHarvest; // time passed in seconds since starting training
+	let progress = current / custom.trainDuration(tile);
 	$('#collect-troops-button').hide();
 	if (trainingFinished(tile) && !tile.collected) {
 		$('#collect-troops-button').show();
@@ -308,6 +342,13 @@ canvas.addEventListener('click', () => {
 
 	$('#marketplace').hide();
 
+	// remove path
+	if (UI.path.dispose) {
+		UI.path.dispose();
+		UI.path = {};
+	}
+
+
 	// unit selection
 	UI.selectedUnit = null;
 	UI.selectedTile = null;
@@ -327,9 +368,9 @@ canvas.addEventListener('click', () => {
 			html += '<p>Maximum move distance: ' + custom.moveDistance(mesh.troops) + '</p>';
 			let now = UI.now();
 			if (mesh.ready > now) {
-				let diff = mesh.ready - now;
-				html += '<div id="cooldown"><progress max="30" value="' + (diff) + '"></progress></div>';
-				html += '<p>Unit still cooling down before next action can be performed. </p>';
+				//let diff = mesh.ready - now;
+				//html += '<div id="cooldown"><progress max="30" value="' + (diff) + '"></progress></div>';
+				//html += '<p>Unit still cooling down before next action can be performed. </p>';
 			} else {
 				html += '<p>Right-click on a tile to move there</p>';
 			}
@@ -346,6 +387,11 @@ canvas.addEventListener('click', () => {
 			if (techHasResearched(19)) {
 				html += '<p style="color: #8f8; ">-50% energy cost to move or attack</p>';
 			}
+
+			html += '<form>';
+			html += 'Select trops if you want to split units:<input type="text" id="split-units" value="' + mesh.troops + '" style="margin: 0; ">';
+			html += '<p>If you want to split this group in two, enter the to be split off amount, then right-click on an friendly nearby tile to move them there. This value is ignored if you attack, ie. you always attack with all available troops on the tile. </p>';
+			html += '</form>';
 		}
 		$('#info-panel').html(html).show();
 		return;
@@ -379,7 +425,7 @@ canvas.addEventListener('click', () => {
 function tileHtml(id) {
 	let html = '';
 	let tile = Tiles[id];
-	if (tile.building > 0) {
+	if (tile.building > 0 && World.buildingData[tile.building]) {
 		html = '<h1>Level ' + tile.level + ' ' + World.buildingData[tile.building].name;
 		html += ' (' + UI.x + ',' + UI.y + ')</h1>';
 		if ([3,4,5].indexOf(parseInt(tile.building)) > 1) {
@@ -427,7 +473,7 @@ function tileHtml(id) {
 	}
 
 	let now = UI.now();
-	if (tile.building > 0) {
+	if (tile.building > 0 && World.buildingData[tile.building]) {
 		html += '<div id="building-progress" style="display: ' + (tile.constructionFinished > now ? 'block' : 'none') + '; ">Constructing';
 		html += '<progress max="100"></progress>';
 		html += '</div>';
@@ -449,7 +495,7 @@ function tileHtml(id) {
 			html += '<dl>';
 			html += '<dt>Mining<dt><dd>' + World.Resources[data.produces].name + '</dd>';
 			html += '<dt>Yield Multiplier<dt><dd>' + custom.yieldMultiplier(tile) + '</dd>';
-			html += '<dt>Capacity<dt><dd style="color: ' + (techHasResearched(20) ? '#8f8' : '#fff') + '">' + custom.mineCapacity(tile.level) + '</dd>';
+			html += '<dt>Capacity<dt><dd style="color: ' + (techHasResearched(20) ? '#8f8' : '#fff') + '">' + custom.mineCapacity(tile) + '</dd>';
 			html += '</dl>';
 			html += '<button id="harvest-button">Harvest</button><br>';
 			html += 'Current Yield: '
@@ -464,23 +510,21 @@ function tileHtml(id) {
 				html += '</ul>';
 			}
 		}
-		if (1) {
-			html += '<h2>Research</h2>';
-			html += '<ul id="techs" style="display: ' + (isResearching(tile.building) ? 'none' : 'block') + '">';
-			for (let t in World.Technologies) {
-				let tech = World.Technologies[t];
-				if (tech.researchedAt == tile.building && !tech.started && (!tech.requiresTech || techHasResearched(tech.requiresTech))) {
-					html += '<li><a data-id="' + t + '"><img src="images/lamden.svg"><b>'
-					html += World.Technologies[t].name + ' (' + World.Technologies[t].duration + 's)</b> '
-					html += costHtml(World.Technologies[t].cost) + '</a></li>';
-				}
+		html += '<h2>Research</h2>';
+		html += '<ul id="techs" style="display: ' + (isResearching(tile.building) ? 'none' : 'block') + '">';
+		for (let t in World.Technologies) {
+			let tech = World.Technologies[t];
+			if (tech.researchedAt == tile.building && !tech.started && (!tech.requiresTech || techHasResearched(tech.requiresTech))) {
+				html += '<li><a data-id="' + t + '"><img src="images/lamden.svg"><b>'
+				html += World.Technologies[t].name + ' (' + World.Technologies[t].duration + 's)</b> '
+				html += costHtml(World.Technologies[t].cost) + '</a></li>';
 			}
-			html += '</ul>';
-			if ([1,3,4,5,7,8,9,11,12].indexOf(parseInt(tile.building)) > -1) { //if building with levels
-				html += '<button id="levelup-button">Level to ' + (tile.level + 1) + '</button><br>';
-				let cost = World.buildingData[tile.building].cost;
-				html += costHtml(custom.levelUpCost(cost, tile.level + 1));
-			}
+		}
+		html += '</ul>';
+		if ([1,3,4,5,7,8,9,11,12,14].indexOf(parseInt(tile.building)) > -1) { //if building with levels
+			html += '<button id="levelup-button">Level to ' + (tile.level + 1) + '</button><br>';
+			let cost = World.buildingData[tile.building].cost;
+			html += costHtml(custom.levelUpCost(cost, tile.level + 1));
 		}
 		if (tile.building == 11) { // conversions
 			html += '<h2>Refine Goods</h2>';
@@ -497,7 +541,7 @@ function tileHtml(id) {
 				}
 			}
 			html += '</dl>';
-			html += '<div id="conversion-progress" style="display: none; ">Refining';
+			html += '<div id="conversion-progress" style="display: ' + (isRefining(tile) || conversionFinished(tile) ? 'block' : 'none') + '; ">Refining';
 			if (tile.convertID) {
 				let produces = World.Conversions[tile.convertID].produces;
 				let amount = tile.convertAmount;
@@ -506,13 +550,17 @@ function tileHtml(id) {
 				refining[produces] = amount;
 				html += costHtml(refining);
 			}
-			html += '<progress max="100"></progress>';
-			html += '<button id="collect-button">Collect</button>';
+
+			let current = UI.now() - tile.lastHarvest;
+			let progress = current / custom.refineryDuration(tile.level, tile.convertAmount);
+
+			html += '<progress max="100" value="' + (progress * 100) + '"></progress>';
+			html += '<button id="collect-button" style="display: ' + (conversionFinished(tile) ? 'block' : 'none') + '">Collect</button>';
 			if (tile.convertID) {
 				html += '<br>' + costHtml(refining);
 			}
 			html += '</div>';
-			html += '<form id="conversion-form">';
+			html += '<form id="conversion-form" style="display: ' + (!isRefining(tile) && !conversionFinished(tile) ? 'block' : 'none') + '">';
 			html += '<select id="convert-id">';
 			for (let c in World.Conversions) {
 				if (tile.level >= World.Conversions[c].requiresLevel) {
@@ -530,32 +578,33 @@ function tileHtml(id) {
 			html += '<dt>Capacity</dt><dd>' + custom.trainCapacity(tile) + ' troops</dd>';
 			html += '<dt>Cost Multiplier</dt><dd>' + custom.trainCostMultiplier(tile) + ' troops</dd>';
 			html += '</dl>';
-			html += '<div id="train-progress" style="display: ' + (isTraining(tile) ? 'block' : 'none') + '; ">Train';
-			html += '<progress max="100"></progress>';
-			html += '<button id="collect-troops-button">Deploy Troops</button>';
+
+			let current = UI.now() - tile.lastHarvest;
+			let progress = current / custom.trainDuration(tile);
+
+			html += '<div id="train-progress" style="display: ' + (isTraining(tile) || trainingFinished(tile) ? 'block' : 'none') + '; ">Train';
+			html += '<progress max="100" value="' + (progress * 100) + '"></progress>';
+			html += '<button id="collect-troops-button" style="display: ' + (trainingFinished(tile) ? 'block' : 'none') + '">Deploy Troops</button>';
 			html += '</div>';
-			//html += '<li><button data-num="1">Create 1 Unit</button> (1 Energy, 1 food)</li>';
-			//html += '<li><button data-num="10">Create 10 Unit</button> (10 Energy, 10 food)</li>';
-			html += '<button id="train-troops" style="display: none; ">Train</button><br>' + custom.trainDuration(tile) + ' seconds';
+			html += '<button id="train-troops" style="display: ' + (!isTraining(tile) && !trainingFinished(tile) ? 'block' : 'none') + '; ">Train</button><br>' + custom.trainDuration(tile) + ' seconds';
 		}
-/*		if (tile.building == 9) {
-			html += '<h2>Create Tanks</h2>';
-			html += '<ul id="create-tank">';
-			html += '<li><button id="u2">Create Tank (1000 Energy, 1000 food)</button></li>';
-			html += '</ul>';
-		}
-		if (tile.building == 12) {
-			html += '<h2>Create Ship</h2>';
-			html += '<ul id="create-ship">';
-			html += '<li><button id="u2">Create Ship (1000 Energy, 1000 food)</button></li>';
-			html += '</ul>';
-		}*/
 		if (tile.building == 14) {
 			html += '<h2>Launch Missile</h2>';
-			html += '<label>Payload</label> ';
-			html += '<input id="missile-power" type="text" value="1000"> tonnes TnT';
-			html += '<button id="missile-button">Launch Missile</button><br>';
-			html += '10,000 Energy, <span id="missile-cost">2000</span> Uranium';
+			html += '<p>Silo Range: ' + (tile.level + 3) + ' tiles</p>';
+			if (tile.lastHarvest + 3600 > UI.now()) {
+				let current = UI.now() - tile.lastHarvest;
+				let progress = current / 3600;
+				html += 'Cooldown';
+				html += '<progress max="100" value="' + (100 - progress * 100) + '"></progress>';
+			} else {
+				html += '<label>Payload</label> ';
+				html += '<input id="missile-power" type="text" value="1000"> tonnes TnT';
+				html += '<button id="missile-button">Launch Missile</button><br>';
+				html += '10,000 Energy, <span id="missile-cost">2000</span> Uranium';
+			}
+		}
+		if (tile.building) {
+			html += '<button id="demolish-button">Demolish</button>';
 		}
 	}
 	$('#info-panel').html(html).show();
@@ -594,24 +643,32 @@ $('#info-panel').on('keyup keypress', '#missile-power', function(e) {
 	$('#missile-cost').html(val + 1000);
 });
 
+UI.cancel = function() {
+	deleteHighlight();
+	UI.tool = 'pan';
+	UI.building = null;
+	if (UI.mesh) {
+		UI.mesh.dispose();
+		UI.mesh = null;
+	}
+	if (UI.path.dispose) {
+		UI.path.dispose();
+		UI.path = {};
+	}
+	if (scene.getMaterialByName('Drag')) {
+		scene.getMaterialByName('Drag').dispose();
+	}
+	UI.selectedTile = null;
+	UI.selectedUnit = null;
+	UI.tileSelect.position.y = -1;
+	$('#info-panel').fadeOut();
+}
 window.addEventListener('keydown', (e) => {
 	if (e.target.name == 'body') {
 		return true;
 	}
 	if (e.keyCode == 27) { // esc
-		deleteHighlight();
-		UI.tool = 'pan';
-		UI.building = null;
-		if (UI.mesh) {
-			UI.mesh.dispose();
-			UI.mesh = null;
-		}
-		if (scene.getMaterialByName('Drag')) {
-			scene.getMaterialByName('Drag').dispose();
-		}
-		UI.selectedTile = null;
-		UI.tileSelect.position.y = -1;
-		$('#info-panel').fadeOut();
+		UI.cancel();
 	}
 	if (e.keyCode == 87) { // W
 		camera.inertialPanningY = 2;
@@ -624,6 +681,18 @@ window.addEventListener('keydown', (e) => {
 	}
 	if (e.keyCode == 68) { // D
 		camera.inertialPanningX = 2;
+	}
+	if (e.keyCode == 82) { // X
+		UI.settings.reflections = !UI.settings.reflections;
+		if (UI.settings.reflections) {
+			World.water.material.reflectionTexture.renderList = World.reflect;
+		} else {
+			World.water.material.reflectionTexture.renderList = [];
+		}
+	}
+	if (e.keyCode == 88) { // X
+		UI.settings.namplates = !UI.settings.namplates;
+		$('#labels').toggle();
 	}
 });
 canvas.addEventListener('contextmenu', () => {
@@ -641,9 +710,20 @@ canvas.addEventListener('contextmenu', () => {
 	let id = (tile.x) + ',' + (tile.y);
 
 	// contextmenu
+	if (UI.building || UI.tool == 'colonize') {
+		UI.cancel();
+		return;
+	}
 
 	// fire missile from silo
 	if (UI.selectedTile && UI.selectedTile != id && UI.launchMissile) {
+		let a = v(tile.x, tile.y);
+		let b = v(UI.x, UI.y);
+		if (World.offset_distance(a, b) > 3 + Tiles[UI.selectedTile].level) {
+			addmessage('Too far for this missile silo. ', '#f88');
+			return false;
+		}
+
 		UI.launchMissile = false;
 		UI.tileTarget.position.y = -100;
 		let val = parseInt($('#missile-power').val());
@@ -657,6 +737,7 @@ canvas.addEventListener('contextmenu', () => {
 			World.Sounds.tick1.play();
 			return false;
 		}
+		let tile = Tiles[UI.selectedTile]
 		$.post('./missile.php', {
 			x: Tiles[UI.selectedTile].x,
 			y: Tiles[UI.selectedTile].y,
@@ -667,6 +748,7 @@ canvas.addEventListener('contextmenu', () => {
 		}, function(e) {
 			console.log(e);
 			data = JSON.parse(e);
+			tile.lastHarvest = UI.now();
 			if (data.error) {
 				addMessage(data.error, '#f88');
 			}
@@ -679,6 +761,9 @@ canvas.addEventListener('contextmenu', () => {
 	if (!UI.selectedUnit) {
 		return false;
 	}
+	let a = v(tile.x, tile.y);
+	let b = v(Tiles[UI.selectedUnit.tileID].x, Tiles[UI.selectedUnit.tileID].y);
+
 	if (UI.selectedUnit.owner != Lamden.wallet) {
 		addMessage('Not your unit', '#f88');
 		return false;
@@ -688,15 +773,16 @@ canvas.addEventListener('contextmenu', () => {
 		addMessage('Unit still underway, wait until arrival', '#f88');
 		return false;
 	}
-	let now = UI.now();
-	if (UI.selectedUnit.ready > now) {
-		World.Sounds[randomArray(['negative1','negative2'])].play();
-		addMessage('Unit still cooling down, wait until cooldown complete', '#f88');
-		return false;
-	}
+	//let now = UI.now();
+	//if (UI.selectedUnit.ready > now) {
+		//World.Sounds[randomArray(['negative1','negative2'])].play();
+		//addMessage('Unit still cooling down, wait until cooldown complete', '#f88');
+		//return false;
+	//}
 	if (id == UI.selectedUnit.tileID) {
 		return;
 	}
+/*	// now handled in pathfinding
 	if (UI.selectedUnit.name == 'Ship' && Tiles[id].type != 'water') {
 		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Cannot move ship on land', '#f88');
@@ -706,14 +792,20 @@ canvas.addEventListener('contextmenu', () => {
 		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Cannot move unit on water', '#f88');
 		return;
-	}
+	} */
 
-	let a = v(tile.x, tile.y);
-	let b = v(Tiles[UI.selectedUnit.tileID].x, Tiles[UI.selectedUnit.tileID].y);
-	if (World.offset_distance(a, b) > custom.moveDistance(UI.selectedUnit.troops)) {
-		World.Sounds[randomArray(['negative1','negative2'])].play();
-		addMessage('Too far for this amount of units', '#f80');
-		return;
+	if ((Tiles[id].owner && Tiles[id].owner != Lamden.wallet) || (Tiles[id].unit && Tiles[id].unit.owner != Lamden.wallet)) { // attack
+		if (World.offset_distance(Tiles[id], Tiles[UI.selectedUnit.tileID]) > custom.attackDistance()) {
+			World.Sounds[randomArray(['negative1','negative2'])].play();
+			addMessage('Too far to attack', '#f80');
+			return;
+		}
+	} else {
+		if (!UI.path.tiles || UI.path.tiles.length > custom.moveDistance(UI.selectedUnit.troops)) {
+			World.Sounds[randomArray(['negative1','negative2'])].play();
+			addMessage('Inacessible or too far for this amount of units', '#f80');
+			return;
+		}
 	}
 
 	if (custom.maxOccupancy(Tiles[id]) < UI.selectedUnit.troops) {
@@ -733,7 +825,8 @@ canvas.addEventListener('contextmenu', () => {
 	}
 	World.Sounds[randomArray(['confirm1','confirm2'])].play();
 
-	let energy = UI.selectedUnit.troops;
+	let amount = parseInt($('#split-units').val()) || 0;
+	let energy = amount || UI.selectedUnit.troops;
 	if (techHasResearched(19)) {
 		energy = Math.ceil(energy * .5);
 	}
@@ -743,9 +836,14 @@ canvas.addEventListener('contextmenu', () => {
 		y: Tiles[UI.selectedUnit.tileID].y,
 		x2: Tiles[id].x,
 		y2: Tiles[id].y,
+		amount: amount,
 		cost: {0:energy},
 	}, function(e) {
 		console.log(e);
+		if (UI.path.dispose) {
+			UI.path.dispose();
+			UI.path = {};
+		}
 		let data = JSON.parse(e);
 		console.log(data);
 /*		if (UI.selectedUnit) {
@@ -800,15 +898,20 @@ canvas.addEventListener('contextmenu', () => {
 function moveUnit(a, b) {
 	let unit = a.unit;
 	unit.unfreezeWorldMatrix();
+	unit.path = pathFinding(a, b);
+	if (!unit.path.length) {
+		return;
+	}
+	unit.path.pop(); // remove last
 	a.unit = null;
 	a.numTroops = 0;
 	b.unit = unit;
 	b.numTroops = unit.troops;
-	unit.lookAt(mapPosition(b.x, b.y));
-	unit.target = mapPosition(b.x, b.y);
+	unit.target = Tiles[unit.path.pop()].pos;
+	unit.lookAt(unit.target);
 	unit.tileID = b.x + ',' + b.y;
 	unit.ready = UI.now() + 30;
-	if (b.owner && !b.currentHP) {
+	if (b.owner && !b.currentHP && b.owner != Lamden.wallet) {
 		b.owner = '';
 		World.drawWorld(true);
 	}
@@ -831,19 +934,27 @@ function attackBuilding(a, b, aRemain, bRemain, fortRemain) {
 	siege(a.unit, b, aRemain, bRemain, fortRemain);
 }
 
-// animate units
+// move units that are moving
 scene.registerBeforeRender(function() {
 	for (let u in World.units) {
 		if (World.units[u].target) {
-			World.units[u].movePOV(0,0,4/engine.fps);
+			World.units[u].movePOV(0,0, clamp(4 / engine.fps, 0, .2));
 			let pos = getScreenCoords(World.units[u].position.add(v(0,10,0)));
 			let id = World.units[u].id;
-			//$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
+			if (UI.settings.namplates) {
+				$('#' + id).css({left: pos.x - (document.getElementById(id).offsetWidth / 2) + 'px', top: pos.y - 10 + 'px'});
+			}
 			if (distance(World.units[u].position, World.units[u].target) < .2) {
-				World.units[u].target = null;
-				World.units[u].freezeWorldMatrix();
-				if (World.units[u].idle) {
-					World.units[u].idle();
+				if (World.units[u].path.length) {
+					World.units[u].target = Tiles[World.units[u].path.pop()].pos;
+					World.units[u].lookAt(World.units[u].target);
+				} else {
+					World.units[u].path = [];
+					World.units[u].target = null;
+					World.units[u].freezeWorldMatrix();
+					if (World.units[u].idle) {
+						World.units[u].idle();
+					}
 				}
 			}
 		}
@@ -859,6 +970,9 @@ function setBuildingData(tile, id, owner, constructionFinished) {
 	}
 	tile.building = parseInt(id);
 	if (tile.building == 0) {
+		return;
+	}
+	if (!World.buildingData[id]) {
 		return;
 	}
 	addBuilding(tile);
@@ -966,7 +1080,7 @@ function mineFinished(tile) {
 	if (!tile || [1,3,4,5,7].indexOf(tile.building) == -1) { // check if mine
 		return false;
 	}
-	if (custom.mineCapacity(tile.level) > custom.calcYield(tile)) {
+	if (custom.mineCapacity(tile) > custom.calcYield(tile)) {
 		return false;
 	}
 	return true;
@@ -980,33 +1094,19 @@ $('#info-panel').on('click', '#harvest-button', function() {
 	let amount = custom.calcYield(Tiles[UI.selectedTile]);
 	Tiles[UI.selectedTile].lastHarvest = UI.now();
 	let resource = World.buildingData[Tiles[UI.selectedTile].building].produces;
+	let tile = Tiles[UI.selectedTile];
 	$.post('./harvest.php', {owner: Lamden.wallet, x: UI.x,y: UI.y, id: resource, amount: amount}, function(e) {
 		console.log(e);
 		changePlayerResource(resource, amount);
-		Tiles[UI.selectedTile].lastHarvest = UI.now();
-		if (Tiles[UI.selectedTile].readyMesh) {
-			Tiles[UI.selectedTile].readyMesh.dispose();
-			Tiles[UI.selectedTile].readyMesh = null;
+		tile.lastHarvest = UI.now();
+		if (tile.readyMesh) {
+			tile.readyMesh.dispose();
+			tile.readyMesh = null;
 		}
 		World.Sounds.rock1.play();
 		tileHtml(UI.selectedTile);
 	});
 });
-function conversionFinished(tile) {
-	tile = Tiles[tile];
-	if (!tile || tile.building != 11) { // check if refinery
-		return false;
-	}
-	if (tile.collected) {
-		return false;
-	}
-	let now = UI.now();
-	let duration = custom.refineryDuration(tile.level, tile.convertAmount);
-	if (tile.lastHarvest + duration < now) {
-		return true;
-	}
-	return false;
-}
 $('#info-panel').on('click', '#convert-button', function(e) {
 	e.preventDefault();
 	if (Tiles[UI.selectedTile].convertAmount && !Tiles[UI.selectedTile].collected) {
@@ -1055,7 +1155,7 @@ $('#info-panel').on('click', '#convert-button', function(e) {
 });
 $('#info-panel').on('click', '#collect-button', function(e) {
 	e.preventDefault();
-	if (!conversionFinished(UI.selectedTile) || Tiles[UI.selectedTile].collected) {
+	if (!conversionFinished(Tiles[UI.selectedTile]) || Tiles[UI.selectedTile].collected) {
 		addMessage('Refining not yet completed, or already collected.');
 		return false;
 	}
@@ -1078,19 +1178,6 @@ $('#info-panel').on('click', '#collect-button', function(e) {
 	});
 
 });
-function trainingFinished(tile) {
-	if (!tile || [8,9,12].indexOf(tile.building) == -1) { // check if barracks
-		return false;
-	}
-	if (tile.collected) {
-		return false;
-	}
-	let now = UI.now();
-	if (tile.lastHarvest + custom.trainDuration(tile) < now) {
-		return true;
-	}
-	return false;
-}
 
 $('#info-panel').on('click', '#train-troops', function(e) {
 	e.preventDefault();
@@ -1180,6 +1267,22 @@ $('#info-panel').on('click', '#levelup-button', function(e) {
 $('#info-panel').on('click', '#missile-button', function(e) {
 	UI.launchMissile = true;
 });
+
+$('#info-panel').on('click', '#demolish-button', function(e) {
+	if (!Tiles[UI.selectedTile].building) {
+		addMessage('No building to demolish', '#f88');
+		return false;
+	}
+	if (!confirm('Are you sure you want to demolish this ' + World.buildingData[Tiles[UI.selectedTile].building].name + '?')) {
+		return false;
+	}
+
+	$.post('./delete.php', {x: UI.x, y: UI.y}, function() {
+		console.log(e);
+	});
+});
+
+
 function updateUnitCount(num) {
 	Player.unitCount = parseInt(num);
 	$('#unit-count').text(Player.unitCount);
@@ -1312,16 +1415,20 @@ function colonizeMode() {
 }
 $('#colonize-button').click(colonizeMode);
 function colonizeTile() {
-	if (!deductCost({0:100})) {
-		World.Sounds.tick1.play();
-		return false;
-	}
 	if (Tiles[UI.x + ',' + UI.y].owner) {
 		addMessage('This tile is already owned', '#f88');
 		World.Sounds.tick1.play();
 		return false;
 	} else if (!World.ownAdjacentTile(UI.x, UI.y)) {
 		addMessage('You can only colonize tiles adjacent to tiles you already own', '#f88');
+		World.Sounds.tick1.play();
+		return false;
+	} else if (Tiles[UI.x + ',' + UI.y].numTroops && Tiles[UI.x + ',' + UI.y].unit.owner != Lamden.wallet) {
+		addMessage('Cannot colonize tiles with enemy troops', '#f88');
+		World.Sounds.tick1.play();
+		return false;
+	}
+	if (!deductCost({0:100})) {
 		World.Sounds.tick1.play();
 		return false;
 	}
@@ -1497,9 +1604,11 @@ $('#chat-panel form').submit(function(e) {
 	return false;
 });
 $.get('./chat.php?lastid', function(e) {
+	console.log(e);
 	UI.lastChatID = parseInt(e) || 0;
 	window.setInterval(function() {
 		$.get('chat.php?id=' + UI.lastChatID, function(e) {
+//			console.log(e);
 			let data = JSON.parse(e);
 			for (let i in data) {
 				var d = new Date(data[i].stamp * 1000);
@@ -1528,7 +1637,7 @@ function checkTerritory() {
 	for (let t in Player.territory) {
 		let tile = Player.territory[t];
 		let ready = false;
-		if (conversionFinished(tile.x + ',' + tile.y)) {
+		if (conversionFinished(tile)) {
 			ready = 'true';
 		} else if (trainingFinished(tile)) {
 			ready = 'true';
@@ -1543,7 +1652,142 @@ function checkTerritory() {
 				tile.readyMesh.rotation.y += 3 / engine.fps;
 				tile.readyMesh.position.y = 10 + Math.sin(tile.readyMesh.rotation.y);
 			});
+		} else if (!ready && tile.readyMesh) {
+			tile.readyMesh.dispose();
+			tile.readyMesh = null;
 		}
 	}
 }
 window.setInterval(checkTerritory, 5000);
+
+// a and b are vector2s  with x and y properties
+// not usable on hex grid
+function findPath(a, b) {
+	let delta = a.subtract(b);
+	let direction = v(a.x < b.x ? 1 : -1, a.y < b.y ? 1 : -1);
+	if (!delta.length()) {
+		return [];
+	}
+	let path = [];
+	let failsafe = 0;
+	if (Math.abs(delta.x) > Math.abs(delta.y)) {
+		for (let i = a.x; i != b.x; i += direction.x) {
+			path.push(v(i, a.y));
+		}
+		for (let i = a.y; i != b.y; i += direction.y) {
+			path.push(v(b.x, i));
+		}
+	} else {
+		for (let i = a.y; i != b.y; i += direction.y) {
+			path.push(v(a.x, i));
+		}
+		for (let i = a.x; i != b.x; i += direction.x) {
+			path.push(v(i, b.y));
+		}
+	}
+	path.push(b.clone());
+	return path;
+}
+UI.path = {};
+function renderPath(path) {
+	if (!path.length) {
+		return;
+	}
+
+	path2 = [];
+	for (let i in path) {
+		path2[i] = Tiles[path[i]].pos.add(v(0,1,0));
+	}
+
+	let curve = BABYLON.Curve3.CreateCatmullRomSpline(path2, 3);
+	UI.path = BABYLON.Mesh.ExtrudeShape('Path', [v(.3,0,0), v(-.3,0,0)], curve._points, 1, 0, 0, scene);
+	UI.path.tiles = path;
+}
+
+
+// a and b are tiles, a must have a unit on it.
+function pathFinding(a, b) {
+	let current = a.x + ',' + a.y; // ;
+	let naval = Tiles[current].type == 'water';
+	let owner = Tiles[current].unit.owner;
+	let open = {};
+	open[current] = {x: a.x, y: b.y, travelled: 0, distance: World.offset_distance(a, b), last: 'start'};
+	let done = {};
+	let lowest = [null, 99999];
+
+	var i = 0;
+	while (current != b.x + ',' + b.y) {
+		i++;
+		// get adjacent nodes
+		let x = Tiles[current].x;
+		let y = Tiles[current].y;
+		let neighbors = World.getAdjacentTiles(x, y);
+		for (let n in neighbors) {
+			let id = neighbors[n].x + ',' + neighbors[n].y;
+			let isEnemy = Tiles[id].owner && Tiles[id].owner != owner;
+			let isPassable = (naval && Tiles[id].type == 'water') || (!naval && Tiles[id].type != 'water');
+			let isDestination = id == (b.x + ',' + b.y);
+			// avoid enemy territory, only destination tile on enemy territory allowed (ie. you can only attack the edge of enemy territory)
+			if (!open[id] && !done[id] && isPassable && (!isEnemy || isDestination)) {
+				open[id] = {x: neighbors[n].x, y: neighbors[n].y, travelled: open[current].travelled + 1, distance: open[current].travelled + World.offset_distance(neighbors[n], b), last: current};
+			}
+		}
+		// move current to done
+		done[current] = open[current];
+		delete open[current];
+
+		// get nearest adjacent node
+		for (let o in open) {
+			if (open[o].distance < lowest[1]) {
+				lowest = [o, open[o].distance];
+			}
+		}
+
+		// if dead end, find next nearestnode
+		if (lowest[0] == current) {
+			if (!done[current]) {
+				delete open[current];
+				done[current] = null;
+			}
+			lowest = [null, 99999];
+			for (let o in open) {
+				if (open[o].distance < lowest[1]) {
+					lowest = [o, open[o].distance];
+				}
+			}
+		}
+
+		// travel
+		current = lowest[0];
+
+		// no path
+		if (current == null && Object.keys(open).length == 0) {
+			return false;
+		}
+		if (i > 400) { // if cannot find
+			break;
+		}
+	}
+
+	// build path
+	path = [(b.x + ',' + b.y)];
+	current = lowest[0];
+	if (current != path[0]) {
+		return [];
+	}
+	var i = 0;
+	while (current != a.x + ',' + a.y && current != 'start') {
+		i++;
+		active = current;
+		if (done[current]) {
+			current = done[current].last;
+		} else {
+			current = open[current].last;
+		}
+		path.push(current);
+		if (i > 50) {
+			break;
+		}
+	}
+	return path;
+}

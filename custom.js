@@ -17,9 +17,12 @@ custom = {
 
 	// calculates move distance for #units
 	moveDistance(num) {
-		let value = clamp(5 - Math.log10(num), 0, 5);
+		let value = clamp(10 - num / 1000, 0, 10);
 		value += techHasResearched(8) ? 1 : 0;
 		return Math.ceil(value);
+	},
+	attackDistance() {
+		return 3 + (techHasResearched(8) ? 1 : 0);
 	},
 
 	// cost to place fortifications on a tile
@@ -35,6 +38,9 @@ custom = {
 	buildingHP(tile) {
 		if (!tile.building) {
 			return 0;
+		}
+		if (!World.buildingData[tile.building]) {
+			return 1;
 		}
 		let hp = World.buildingData[tile.building].hp;
 		hp *= techHasResearched(18) ? 2 : 1;
@@ -84,8 +90,12 @@ custom = {
 	},
 
 	// capacity for a mine/oilwell
-	mineCapacity(level) {
-		return level * 1000 * (techHasResearched(20) ? 2 : 1);
+	mineCapacity(tile) {
+		let base = tile.level * 1000 * (techHasResearched(20) ? 2 : 1);
+		if ([1,7].indexOf(tile.building) > -1 && techHasResearched(21)) {
+			base *= 2;
+		}
+		return base;
 	},
 
 	// yield speed
@@ -97,6 +107,9 @@ custom = {
 		if (techHasResearched(12)) {
 			speed *= 1.1;
 		}
+		if ([1,7].indexOf(tile.building) > -1 && techHasResearched(21)) {
+			speed *= 2;
+		}
 		return speed;
 	},
 
@@ -105,7 +118,7 @@ custom = {
 		let now = UI.now();
 		let lastHarvest = tile.lastHarvest || now;
 		let elapsed = now - lastHarvest;
-		let capacity = this.mineCapacity(tile.level);
+		let capacity = this.mineCapacity(tile);
 		let amount = elapsed * this.yieldMultiplier(tile);
 		if (amount > capacity) { // clamp yield to capacity if exceeds
 			amount = capacity;
@@ -121,7 +134,7 @@ custom = {
 	// returns duration to refine <amount> resources in seconds
 	refineryDuration(level, amount) {
 		amount = amount || this.refineryCapacity(level);
-		return Math.round(amount / this.refinerySpeed(level));
+		return Math.ceil(amount / this.refinerySpeed(level));
 	},
 
 	// returns number of resources that can be refined per second

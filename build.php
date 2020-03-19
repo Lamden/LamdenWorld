@@ -12,7 +12,7 @@ if (!deductCost($tile['owner'], $cost)) {
 	die('{"error": "Not enough resources"}');
 }
 $hp = 1000;
-if ($id == 15) { // bunker
+if ($id == 15 || $id == 2) { // bunker/wall
 	$hp = 5000;
 }
 if (hasResearched($tile['owner'], 18)) {

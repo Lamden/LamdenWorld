@@ -19,6 +19,7 @@ $cost = $request->get('cost', 'array');
 if (!deductCost($attacker['owner'], $cost)) {
 	die('{"error": "Not enough resources"}');
 }
+$sql->q("UPDATE tiles SET lastHarvest = UNIX_TIMESTAMP() WHERE x = $x AND y = $y");
 if (hasResearched($defender['owner'], 15) && rand(0, 99) < 15) {
 	$power = 0;
 	$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2, var3) VALUES ('missile', $x, $y, $x2, $y2, {$defender['numTroops']}, {$defender['hp']}, {$defender['fort']})");

@@ -46,10 +46,10 @@ const World = {
 		17: {name: 'Refine Fossil Fuel to Plastics', requiresLevel: 1, consumes: 3, produces: 16, speed: 1, capacity: 100},
 	},
 	Resources: {
-		0: {name: 'Energy'},
-		1: {name: 'Sedementary Rock'},
-		2: {name: 'Ore'},
-		3: {name: 'Fossil Fuel'},
+		0: {name: 'Energy', icon: 'energy.png'},
+		1: {name: 'Sedementary Rock', icon: 'box.png'},
+		2: {name: 'Ore', icon: 'gem.png'},
+		3: {name: 'Fossil Fuel', icon: 'drum.png'},
 		4: {name: 'Iron'},
 		5: {name: 'Copper'},
 		6: {name: 'Lead'},
@@ -88,8 +88,8 @@ const World = {
 		explosion1: new BABYLON.Sound('explosion1', 'sounds/explosion1.mp3', scene, null, {volume: .3}),
 		explosion2: new BABYLON.Sound('explosion2', 'sounds/explosion2.mp3', scene, null, {volume: .3}),
 		explosion3: new BABYLON.Sound('explosion3', 'sounds/explosion3.mp3', scene, null, {volume: .3}),
-		explosion4: new BABYLON.Sound('explosion4', 'sounds/explosion4.mp3', scene, null, {volume: .3}),
-		explosion5: new BABYLON.Sound('explosion5', 'sounds/explosion5.mp3', scene, null, {volume: .3}),
+		explosion4: new BABYLON.Sound('explosion4', 'sounds/explosion4.mp3', scene, null, {volume: .15}),
+		explosion5: new BABYLON.Sound('explosion5', 'sounds/explosion5.mp3', scene, null, {volume: .2}),
 		explosion6: new BABYLON.Sound('explosion6', 'sounds/explosion6.mp3', scene, null, {volume: .3}),
 		upgrade1: new BABYLON.Sound('upgrade1', 'sounds/upgrade1.mp3', scene, null, {volume: .3}),
 		upgrade2: new BABYLON.Sound('upgrade2', 'sounds/upgrade2.mp3', scene, null, {volume: .3}),
@@ -200,6 +200,7 @@ const World = {
 		};
 		img.src = url;
 	},
+	// samples pixel from loaded image returns array(rgba)
 	getBlendColorAtPosition: function(p) {
 		let pos = Math.floor(p.x + p.y * 512) * 4;
 		let c = [World.buffer[pos + 0],World.buffer[pos + 1],World.buffer[pos + 2],World.buffer[pos + 3]];
@@ -614,6 +615,7 @@ const World = {
 }
 Player = {
 	Resources: {},
+	lastHarvest: {},
 	unitCount: 0,
 }
 
@@ -763,9 +765,8 @@ function addUnit(num, pos, tile, owner) {
 	World.units.push(unit);
 	unit.shoot = function() {
 		let sound = World.Sounds['gun' + Math.ceil(Math.random() * 2)];
-		sound.maxDistance = 50;
+		sound.maxDistance = 200;
 		sound.attachToMesh(unit);
-		console.log(sound);
 		sound.play();
 	}
 	unit.freezeWorldMatrix();
@@ -801,7 +802,12 @@ function addTank(x, y, id, owner) {
 	tank.engine = World.Sounds['engine1'].clone();
 	tank.engine.attachToMesh(tank);
 	tank.shoot = function() {
-		World.Sounds['explosion' + Math.ceil(Math.random() * 6)].play();
+		let num = Math.ceil(Math.random() * 6);
+		let sound = World.Sounds['explosion' + num];
+		console.log(num);
+		sound.maxDistance = 500;
+		sound.attachToMesh(tank);
+		sound.play();
 	}
 	tank.freezeWorldMatrix();
 	World.units.push(tank);
@@ -834,7 +840,10 @@ function addShip(x, y, id, owner) {
 	ship.engine = World.Sounds['refinery1'].clone();
 	ship.engine.attachToMesh(ship);
 	ship.shoot = function() {
-		World.Sounds['explosion' + Math.ceil(Math.random() * 6)].play();
+		let sound = World.Sounds['explosion' + Math.ceil(Math.random() * 6)];
+		sound.maxDistance = 500;
+		sound.attachToMesh(ship);
+		sound.play();
 	}
 	ship.freezeWorldMatrix();
 	World.units.push(ship);
@@ -1181,7 +1190,7 @@ function pGrow(particles) {
 			continue;
 		} else {
 			particle.colorStep.scaleToRef(this._scaledUpdateSpeed, this._scaledColorStep);
-			particle.size += .005;
+			particle.size += .05;
 			particle.color.addInPlace(this._scaledColorStep);
 			if (particle.color.a < 0)
 				particle.color.a = 0;
@@ -1304,7 +1313,7 @@ Effects = {
 	},
 	'smoke': {
 		particleTexture: new BABYLON.Texture("textures/smoke.jpg", scene),
-		emitRate: 1,
+		emitRate: .2,
 		direction1: v(-.1, 1, -.1),
 		direction2: v(.1, 1, .1),
 		minEmitBox: v(-.02, 4, -.02),

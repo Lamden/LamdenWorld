@@ -17,6 +17,8 @@ $troops = $sql->s("SELECT SUM(numTroops) FROM tiles WHERE troopOwner = '$owner'"
 echo $troops ? $troops : 0;
 echo ', "resources": ';
 echo sql2jsonKV($sql->q("SELECT resource, amount FROM resources WHERE owner = '$owner'"));
+echo ', "lastHarvest": ';
+echo sql2jsonKV($sql->q("SELECT resource, lastHarvest FROM resources WHERE owner = '$owner'"));
 echo ',  "research": ';
 echo sql2jsonKV($sql->q("SELECT id, stamp FROM research WHERE owner = '$owner'"));
 echo '}';

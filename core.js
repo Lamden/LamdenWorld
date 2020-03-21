@@ -547,7 +547,6 @@ function updateSPSMeshes() {
 		modelSPS[id].refreshVisibleSize();
 		modelSPS[id].mesh.freezeWorldMatrix();
 		var t1 = performance.now();
-		console.log(id + ':' + (t1 - t0));
 	}
 	updateSPS = {};
 }

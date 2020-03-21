@@ -497,10 +497,11 @@ function tileHtml(id) {
 			html += '<dt>Yield Multiplier<dt><dd>' + custom.yieldMultiplier(tile) + '</dd>';
 			html += '<dt>Capacity<dt><dd style="color: ' + (techHasResearched(20) ? '#8f8' : '#fff') + '">' + custom.mineCapacity(tile) + '</dd>';
 			html += '</dl>';
-			html += '<button id="harvest-button">Harvest</button><br>';
+			//html += '<button id="harvest-button">Harvest</button><br>';
 			html += 'Current Yield: '
 			html += '<img src="icons/ingot.png" style="width: 16px; height: 16px; ">';
-			html += custom.calcYield(tile) + ' ' + World.Resources[data.produces].name;
+			html += custom.calcYield(tile) + ' ' + World.Resources[data.produces].name + '<br>';
+			html += 'Click the resource icons on the left to harvest all buildings producing ' + World.Resources[data.produces].name;
 			if ([3,4,5].indexOf(parseInt(tile.building)) > -1) {
 				html += '<h2>Switch Resource</h2>';
 				html += '<ul id="mine-switch">';
@@ -733,11 +734,16 @@ canvas.addEventListener('contextmenu', () => {
 			World.Sounds.tick1.play();
 			return false;
 		}
+		let tile = Tiles[UI.selectedTile];
+		if (tile.lastHarvest + 1800 > UI.now()) {
+			addMessage('Cooldown not finished. ');
+			World.Sounds.tick1.play();
+			return false;
+		}
 		if (!deductCost(custom.missileCost(val))) {
 			World.Sounds.tick1.play();
 			return false;
 		}
-		let tile = Tiles[UI.selectedTile]
 		$.post('./missile.php', {
 			x: Tiles[UI.selectedTile].x,
 			y: Tiles[UI.selectedTile].y,
@@ -752,7 +758,8 @@ canvas.addEventListener('contextmenu', () => {
 			if (data.error) {
 				addMessage(data.error, '#f88');
 			}
-		});
+			tileHtml(UI.selectedTile);
+	});
 		return;
 		fireMissile(Tiles[UI.selectedTile], Tiles[id], val);
 		return;
@@ -808,7 +815,8 @@ canvas.addEventListener('contextmenu', () => {
 		}
 	}
 
-	if (custom.maxOccupancy(Tiles[id]) < UI.selectedUnit.troops) {
+	let amount = clamp(parseInt($('#split-units').val()) || 0, 0, UI.selectedUnit.troops);
+	if (custom.maxOccupancy(Tiles[id]) < (amount || UI.selectedUnit.troops)) {
 		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Too many troops for destination tile. ', '#f80');
 		return;
@@ -825,7 +833,6 @@ canvas.addEventListener('contextmenu', () => {
 	}
 	World.Sounds[randomArray(['confirm1','confirm2'])].play();
 
-	let amount = parseInt($('#split-units').val()) || 0;
 	let energy = amount || UI.selectedUnit.troops;
 	if (techHasResearched(19)) {
 		energy = Math.ceil(energy * .5);
@@ -1107,6 +1114,25 @@ $('#info-panel').on('click', '#harvest-button', function() {
 		tileHtml(UI.selectedTile);
 	});
 });
+$('#resources').on('click', 'li', function(e) {
+	let resource = e.target.parentNode.id.substr(1);
+	if (UI.now() - Player.lastHarvest[resource] < 10) {
+		addMessage('Harvesting too soon, try again later', '#f88');
+		return;
+	}
+	let amount = harvestAll(resource);
+	Player.lastHarvest[resource] = UI.now();
+	$.post('./massharvest.php', {owner: Lamden.wallet, id: resource, amount: amount}, function(e) {
+		console.log(e);
+		changePlayerResource(resource, amount);
+		Player.lastHarvest[resource] = UI.now();
+		World.Sounds.rock1.play();
+		if (UI.selectedTile) {
+			tileHtml(UI.selectedTile);
+		}
+	});
+});
+
 $('#info-panel').on('click', '#convert-button', function(e) {
 	e.preventDefault();
 	if (Tiles[UI.selectedTile].convertAmount && !Tiles[UI.selectedTile].collected) {
@@ -1322,7 +1348,7 @@ function changePlayerResource(id, amount) {
 		Player.Resources[id] += amount;
 	}
 	if (!$('#r' + id)[0] && Player.Resources[id] > 0) {
-		$('#resources').append('<li id="r' + id + '"><img src="icons/ingot.png" title="' + World.Resources[id].name + '"><span>' + formatNumber(Player.Resources[id]) + '</span></li>');
+		$('#resources').append('<li id="r' + id + '"><img src="icons/' + (World.Resources[id].icon ? World.Resources[id].icon : 'ingot.png') + '" title="' + World.Resources[id].name + '"><span>' + formatNumber(Player.Resources[id]) + '</span></li>');
 	}
 	$('#r' + id + ' span').html(formatNumber(Player.Resources[id]));
 	addMessage((amount > 0 ? '+' : '') + amount + ' ' + World.Resources[id].name, '#aaa');
@@ -1633,6 +1659,7 @@ $.get('./chat.php?lastid', function(e) {
 	}, 1000);
 });
 
+// task done indication for tiles
 function checkTerritory() {
 	for (let t in Player.territory) {
 		let tile = Player.territory[t];
@@ -1641,8 +1668,8 @@ function checkTerritory() {
 			ready = 'true';
 		} else if (trainingFinished(tile)) {
 			ready = 'true';
-		} else if (mineFinished(tile)) {
-			ready = 'true';
+//		} else if (mineFinished(tile)) {
+//			ready = 'true';
 		}
 		if (ready && !tile.readyMesh) {
 			tile.readyMesh = World.assets['Lamden Logo'].clone('Logo');
@@ -1790,4 +1817,16 @@ function pathFinding(a, b) {
 		}
 	}
 	return path;
+}
+
+function harvestAll(resource) {
+	let amount = 0;
+	for (let t in Player.territory) {
+		let tile = Player.territory[t];
+		if (tile.building && World.buildingData[tile.building].produces == resource) {
+			let yield = custom.calcYield(tile);
+			amount += yield;
+		}
+	}
+	return Math.round(amount);
 }

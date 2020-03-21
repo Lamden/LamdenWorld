@@ -23,7 +23,7 @@ html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-s
 #resources { width: 150px; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,.6); padding: 5px; height: auto;
 	margin-bottom: 200px; background-image: url(images/bg2.jpg); box-shadow: inset 0 0 3px #000; }
 #resources li { float: left; width: 48px; height:48px; display: block; position: relative; margin: 5px; }
-#resources img { width: 48px; height: 48px; }
+#resources img { width: 48px; height: 48px; cursor: pointer; }
 #resources span { position: absolute; bottom: 0 ; right: 0;
 	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
 
@@ -141,14 +141,14 @@ button:hover { background-color: #935; }
 </section>
 <section id="loading-screen"><p>Loading...</p></section>
 </body>
-<script src="babylon.2.3.js"></script>
+<script src="babylon.2.3.js?1"></script>
 <script src="jquery.js"></script>
 <script src="core.js"></script>
 <script src="blendMaterial.js"></script>
 <script src="watermaterial.js"></script>
-<script src="world.js?1"></script>
-<script src="ui.js?1"></script>
-<script src="custom.js"></script>
+<script src="world.js?2"></script>
+<script src="ui.js?2"></script>
+<script src="custom.js?1"></script>
 <script>
 camera.lowerBetaLimit = .1;
 camera.upperBetaLimit = Math.PI * .4;
@@ -239,6 +239,9 @@ const Lamden = {
 			camera.target.position = mapPosition(data.x, data.y);
 			for (let i in data.resources) {
 				changePlayerResource(i, data.resources[i]);
+			}
+			for (let i in data.lastHarvest) {
+				Player.lastHarvest[i] = data.lastHarvest[i];
 			}
 			for (let i in data.research) {
 				if (World.Technologies[i]) {
@@ -363,7 +366,7 @@ function loadAssets() {
 		}
 		//scene.getMeshByName('Base_mesh').scaling.scaleInPlace(.1);
 		//scene.getMeshByName('Soldier_01_mesh').scaling.scaleInPlace(.1);
-		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?30', scene, function(meshes) {
+		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?31', scene, function(meshes) {
 			for (let m in meshes) {
 				meshes[m].position.scaleInPlace(.22);
 				meshes[m].position.y = 1;

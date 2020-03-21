@@ -116,7 +116,13 @@ custom = {
 	// yield for a mine
 	calcYield(tile) {
 		let now = UI.now();
-		let lastHarvest = tile.lastHarvest || now;
+		//let lastHarvest = tile.lastHarvest || now;
+		let resource = World.buildingData[tile.building].produces;
+		if (resource === undefined) {
+			console.log(tile, resource);
+			return 0;
+		}
+		let lastHarvest = Player.lastHarvest[resource];
 		let elapsed = now - lastHarvest;
 		let capacity = this.mineCapacity(tile);
 		let amount = elapsed * this.yieldMultiplier(tile);

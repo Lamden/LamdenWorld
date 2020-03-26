@@ -7,11 +7,14 @@ $y2 = $request->get('y2');
 $amount = $request->get('amount');
 $cost = $request->get('cost', 'array');
 
-$attacker = $sql->get("SELECT numTroops, troopOwner FROM tiles WHERE x = $x AND y = $y");
+$attacker = $sql->get("SELECT type, numTroops, troopOwner FROM tiles WHERE x = $x AND y = $y");
 $defender = $sql->get("SELECT * FROM tiles WHERE x = $x2 AND y = $y2");
 $battle = false;
 $siege = false;
-//var_dump($sql->s("SEL/ECT amount FROM resources WHERE owner = '{$attacker['troopOwner']}' AND resource = 0"));
+
+if (!$attacker['troopOwner']) {
+	die('{"error": "Sync error, please refresh the page"}');
+}
 if (!deductCost($attacker['troopOwner'], $cost)) {
 	die('{"error": "Not enough resources"}');
 }
@@ -49,8 +52,8 @@ if ($defender) { // existing tile
 			$attacker['numTroops'] -= $dPower;
 			$defender['numTroops'] = 0;
 		}*/
-		$defender['numTroops'] = clamp($defender['numTroops'] - $aPower, 0, $defender['numTroops']);
-		$attacker['numTroops'] = clamp($attacker['numTroops'] - $dPower, 0, $attacker['numTroops']);
+		$defender['numTroops'] = round(clamp($defender['numTroops'] - $aPower, 0, $defender['numTroops']));
+		$attacker['numTroops'] = round(clamp($attacker['numTroops'] - $dPower, 0, $attacker['numTroops']));
 		$sql->q("UPDATE tiles SET numTroops = {$attacker['numTroops']}" . ($attacker['numTroops'] == 0 ? ", troopOwner = ''" : '') . " WHERE x = $x AND y = $y");
 		$sql->q("UPDATE tiles SET numTroops = {$defender['numTroops']}" . ($defender['numTroops'] == 0 ? ", troopOwner = ''" : '') . " WHERE x = $x2 AND y = $y2");
 		$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2) VALUES ('attack', $x, $y, $x2, $y2, {$attacker['numTroops']}, {$defender['numTroops']})");
@@ -111,9 +114,14 @@ if ($defender) { // existing tile
 	}
 } else {
 	// move to new tile
+	$type = clamp((int)$attacker['type'] + (rand(0,1) == 0 ? -5 : 5), 0, 255);
+	if ($type <= 80) { // water
+		$sql->q("INSERT INTO tiles (type, x, y) VALUES ($type, $x2, $y2)");
+	} else {
 	$sql->q("UPDATE tiles SET numTroops = 0, troopOwner = '' WHERE x = $x AND y = $y");
-	$sql->q("INSERT INTO tiles (x, y, numTroops, troopOwner) VALUES ($x2, $y2, {$attacker['numTroops']}, '{$attacker['troopOwner']}')");
-	$sql->q("INSERT INTO log (type, x, y, x2, y2) VALUES ('move', $x, $y, $x2, $y2)");
+		$sql->q("INSERT INTO tiles (type, x, y, numTroops, troopOwner) VALUES ($type, $x2, $y2, {$attacker['numTroops']}, '{$attacker['troopOwner']}')");
+	}
+	$sql->q("INSERT INTO log (type, x, y, x2, y2, var2) VALUES ('move', $x, $y, $x2, $y2, $type)");
 }
 echo '[';
 echo sql2json($sql->q("SELECT * FROM tiles WHERE x = $x AND y = $y"));

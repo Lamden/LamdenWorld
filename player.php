@@ -22,4 +22,8 @@ echo sql2jsonKV($sql->q("SELECT resource, lastHarvest FROM resources WHERE owner
 echo ',  "research": ';
 echo sql2jsonKV($sql->q("SELECT id, stamp FROM research WHERE owner = '$owner'"));
 echo '}';
+if (!$troops) {
+	$troops = 0;
+}
+$sql->q("UPDATE players SET troops = $troops WHERE address = '$owner'");
 ?>

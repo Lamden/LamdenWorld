@@ -9,8 +9,8 @@ custom = {
 		if (techHasResearched(16)) {
 			value += 4000;
 		}
-		if (tile.owner == Lamden.wallet && tile.building == 15) { // bunker
-			value += 10000;
+		if (tile.building == 15) { // bunker
+			value += (tile.level * 1000);
 		}
 		return value;
 	},
@@ -42,7 +42,7 @@ custom = {
 		if (!World.buildingData[tile.building]) {
 			return 1;
 		}
-		let hp = World.buildingData[tile.building].hp;
+		let hp = World.buildingData[tile.building].hp + Math.floor((tile.level - 1) * World.buildingData[tile.building].hp / 3);
 		hp *= techHasResearched(18) ? 2 : 1;
 		return hp;
 	},
@@ -117,19 +117,21 @@ custom = {
 	calcYield(tile) {
 		let now = UI.now();
 		//let lastHarvest = tile.lastHarvest || now;
+		console.log(tile);
+		console.log(tile.building);
 		let resource = World.buildingData[tile.building].produces;
 		if (resource === undefined) {
 			console.log(tile, resource);
 			return 0;
 		}
-		let lastHarvest = Player.lastHarvest[resource];
+		let lastHarvest = tile.lastHarvest > Player.lastHarvest[resource] ? tile.lastHarvest : Player.lastHarvest[resource];
 		let elapsed = now - lastHarvest;
 		let capacity = this.mineCapacity(tile);
 		let amount = elapsed * this.yieldMultiplier(tile);
 		if (amount > capacity) { // clamp yield to capacity if exceeds
 			amount = capacity;
 		}
-		return amount;
+		return Math.round(amount);
 	},
 
 	// returns max number of resources that can be refiend in one batch
@@ -171,7 +173,7 @@ custom = {
 
 	// cost to launch a missile with potential power of <power>
 	missileCost(power) {
-		return {0:10000, 17: parseInt(power) + 1000};
+		return {0:10, 2: parseInt(power) + 1};
 	},
 
 	// damage of missile with potential power of <power>

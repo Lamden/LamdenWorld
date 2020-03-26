@@ -164,6 +164,7 @@ function clamp($current, $min, $max) {
     return max($min, min($max, $current));
 }
 function hasResearched($player, $tech) {
+	return 0;
 	global $sql;
 	return $sql->s("SELECT COUNT(*) FROM research WHERE owner = '$player' AND id = $tech AND stamp < UNIX_TIMESTAMP() - 30");
 }

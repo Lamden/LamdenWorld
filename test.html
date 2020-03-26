@@ -1,6 +1,24 @@
-<script src="require.js"></script>
-<script type="module">
-require(['lamden'], function (Lamden) {
-    console.log(Lamden);
+<script>
+document.addEventListener('lamdenWalletInfo', function(e) {
+	console.log(e);
 });
+document.addEventListener('lamdenWalletTxStatus', function(e) {
+	console.log(e);
+});
+function test() {
+	const detail = JSON.stringify({
+		appName: 'LamdenWorld',
+		description: 'RTS game under development. RTS Game under development. RTS Game under development. ',
+		logo: './',
+		contractName: 'con_lw',
+		networkType: 'testnet',
+		//reapprove: true,
+	})
+
+	document.dispatchEvent(new CustomEvent('lamdenWalletConnect', {detail}));
+}
+function getWallet() {
+	document.dispatchEvent(new CustomEvent('lamdenWalletGetInfo'));
+}
+
 </script>

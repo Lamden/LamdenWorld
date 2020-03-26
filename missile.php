@@ -10,6 +10,7 @@ $defender = $sql->get("SELECT * FROM tiles WHERE x = $x2 AND y = $y2");
 $power *= hasResearched($attacker['owner'], 14) ? 1.2 : 1;
 if (!$defender) {
 	$defender = array(
+		'owner' => '',
 		'hp' => 0,
 		'fort' => 0,
 		'numTroops' => 0,

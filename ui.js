@@ -73,8 +73,8 @@ canvas.addEventListener('mousemove', (e) => {
 	if (UI.launchMissile) {
 		UI.tileTarget.position = mapPosition(tile.x, tile.y).add(v(0,.03,0));
 		let a = v(tile.x, tile.y);
-		let b = v(Tiles[UI.selectedUnit.tileID].x, Tiles[UI.selectedUnit.tileID].y);
-		html += '<p>Distance: ' + World.offset_distance(a, b) + ' tiles</p>';
+		let b = v(UI.x, UI.y);
+		let html = '<p>Distance: ' + World.offset_distance(a, b) + ' tiles</p>';
 		html += '<p>Silo Max Range: ' + (3 + Tiles[UI.selectedTile].level) + ' tiles</p>';
 		$('#tooltip').show().html(html).css({left: scene.pointerX + 10, top: scene.pointerY + 10});
 		return;
@@ -87,11 +87,32 @@ canvas.addEventListener('mousemove', (e) => {
 	if (UI.mesh && UI.tool == 'colonize') {
 		UI.mesh.position = UI.tileHover.position.clone();
 	}
+	if (UI.mesh && UI.tool == 'deploy') {
+		UI.mesh.position = UI.tileHover.position.clone();
+	}
 	if (UI.tool == 'colonize') {
 		let tile = Tiles[id];
 		let html = '';
 		UI.mesh.material.diffuseColor = color(1,1,1);
 		if (tile.owner) {
+			html = 'This tile is already owned. ';
+			UI.mesh.material.diffuseColor = color(1,0,0);
+		} else if (UI.availableTiles.indexOf(tile.x + ',' + tile.y) == -1) {
+			html = 'You can only colonize tiles adjacent to tiles you already own';
+			UI.mesh.material.diffuseColor = color(1,0,0);
+		} else {
+			html = 'Click to colonize this tile';
+			UI.mesh.material.diffuseColor = color(0,1,0);
+		}
+		html += '<br>Esc or right-click to cancel';
+		$('#tooltip').show().html(html).css({left: scene.pointerX + 10, top: scene.pointerY + 10});
+		return;
+	}
+	if (UI.tool == 'deploy') {
+		let tile = Tiles[id];
+		let html = '';
+		UI.mesh.material.diffuseColor = color(1,1,1);
+		if (tile.owner != Lamden.wallet && (!tile.unit || tile.unit.owner != Lamden.wallet)) {
 			html = 'This tile is already owned. ';
 			UI.mesh.material.diffuseColor = color(1,0,0);
 		} else if (UI.availableTiles.indexOf(tile.x + ',' + tile.y) == -1) {
@@ -118,9 +139,12 @@ canvas.addEventListener('mousemove', (e) => {
 		} else if (UI.building == 12 && tile.type != 'water') {
 			UI.mesh.material.diffuseColor = color(1,0,0);
 			html += 'Must be placed on water. ';
-		} else if (tile.owner != Lamden.wallet) {
+//		} else if (tile.owner != Lamden.wallet) {
+//			UI.mesh.material.diffuseColor = color(1,0,0);
+//			html += 'You must colonize this tile first before you can build there. ';
+		} else if (UI.availableTiles.indexOf(tile.x + ',' + tile.y) == -1) {
 			UI.mesh.material.diffuseColor = color(1,0,0);
-			html += 'You must colonize this tile first before you can build there. ';
+			html += 'You can only place buildigns on tiles with your troops on them, adjacent to a building you own and not adjacent to enemy territory. ';
 		} else if (tile.building) {
 			UI.mesh.material.diffuseColor = color(1,0,0);
 			html += 'Tile occupied already';
@@ -137,6 +161,8 @@ canvas.addEventListener('mousemove', (e) => {
 	if (Tiles[id]) {
 		if (Tiles[id].building && World.buildingData[Tiles[id].building]) {
 			html += '<h3>[' + tile.x + ',' + tile.y + '] ' + World.buildingData[Tiles[id].building].name + '</h3>';
+		} else if (!Tiles[id].terrain) {
+			html += '<h3>[' + tile.x + ',' + tile.y + '] Unexplored</h3>';
 		} else {
 			html += '<h3>[' + tile.x + ',' + tile.y + '] ' + World.tileTypes[Tiles[id].type].name + '</h3>';
 		}
@@ -158,15 +184,16 @@ canvas.addEventListener('mousemove', (e) => {
 			}
 			//let d = World.offset_distance(unitPos, tilePos);
 			//if (d <= custom.moveDistance(UI.selectedUnit.troops)) {
-			if (UI.path.tiles && UI.path.tiles.length < custom.moveDistance(UI.selectedUnit.troops)) {
+			let amount = clamp(parseInt($('#split-units').val()) || 0, 0, UI.selectedUnit.troops);
+			if (UI.path.tiles && UI.path.tiles.length < custom.moveDistance(amount || UI.selectedUnit.troops)) {
 				let d = UI.path.tiles.length - 1;
-				html += d + ' tiles away. Costs ' + Math.ceil(d * UI.selectedUnit.troops * (techHasResearched(19) ? .5 : 1)) + ' energy to move here; right-click to move to this tile. ';
+				html += d + ' tiles away. Costs ' + Math.ceil(d * amount * (techHasResearched(19) ? .5 : 1)) + ' energy to move ' + amount + ' troops here; left-click to move to this tile. ';
 			} else if ((Tiles[id].owner && Tiles[id].owner != Lamden.wallet) || (Tiles[id].unit && Tiles[id].unit.owner != Lamden.wallet)) {
 				let d = World.offset_distance(Tiles[UI.selectedUnit.tileID], Tiles[id]);
 				if (d > custom.attackDistance()) {
 					html += 'Too far to attack';
 				} else {
-					html += 'Attack, costs ' + Math.ceil(d * UI.selectedUnit.troops * (techHasResearched(19) ? .5 : 1)) + ' energy to attack; right-click to attack. ';
+					html += 'Attack, costs ' + Math.ceil(d * UI.selectedUnit.troops * (techHasResearched(19) ? .5 : 1)) + ' energy to attack; left-click to attack. ';
 				}
 			} else {
 				html += 'Cannot move here';
@@ -177,6 +204,7 @@ canvas.addEventListener('mousemove', (e) => {
 	$('#tooltip').show().html(html).css({left: scene.pointerX + 10, top: scene.pointerY + 10});
 });
 function techHasResearched(id) {
+	return false; // disable techs
 	let tech = World.Technologies[id];
 	let now = UI.now();
 	if (tech.started && tech.started + tech.duration < now) {
@@ -327,9 +355,16 @@ window.setInterval(updateTrainProgress, 1000);
 window.setInterval(updateUnitCooldown, 1000);
 canvas.addEventListener('click', () => {
 	let pickResult = scene.pick(scene.pointerX, scene.pointerY, function(mesh) {
-		return mesh.name == 'water' || (mesh.type == 'unit') || (mesh.parent && mesh.parent.type == 'unit');
+		if (UI.mesh) {
+			return mesh.name == 'water';
+		} else {
+			return mesh.name == 'water' || (mesh.type == 'unit') || (mesh.parent && mesh.parent.type == 'unit');
+		}
 	});
 	if (!pickResult.hit) {
+		return;
+	}
+	if (Math.abs(camera.inertialPanningX) > .1 || Math.abs(camera.inertialPanningY)  > .1) {
 		return;
 	}
 	let point = pickResult.pickedPoint;
@@ -342,6 +377,146 @@ canvas.addEventListener('click', () => {
 
 	$('#marketplace').hide();
 
+	let tile = pos2tile(v(point.x, point.z));
+	let id = (tile.x) + ',' + (tile.y);
+
+	// fire missile from silo
+	if (UI.selectedTile && UI.selectedTile != id && UI.launchMissile) {
+
+		let a = tile.clone();
+		let b = v(UI.x, UI.y);
+		if (World.offset_distance(a, b) > 3 + Tiles[UI.selectedTile].level) {
+			addMessage('Too far for this missile silo. Target distance: ' + World.offset_distance(a, b) + ' tiles, silo range: ' + (3 + Tiles[UI.selectedTile].level) + ' tiles', '#f88');
+			return false;
+		}
+
+		UI.launchMissile = false;
+		UI.tileTarget.position.y = -100;
+		let val = parseInt($('#missile-power').val());
+		// get power
+		if (!val || val <= 0) {
+			addMessage('Enter a positive value for power');
+			World.Sounds.tick1.play();
+			return false;
+		}
+		//let tile = Tiles[UI.selectedTile];
+		if (Tiles[UI.selectedTile].lastHarvest + 3.6 > UI.now()) {
+			addMessage('Cooldown not finished. ');
+			World.Sounds.tick1.play();
+			return false;
+		}
+		if (!deductCost(custom.missileCost(val))) {
+			World.Sounds.tick1.play();
+			return false;
+		}
+		$.post('./missile.php', {
+			x: Tiles[UI.selectedTile].x,
+			y: Tiles[UI.selectedTile].y,
+			x2: tile.x,
+			y2: tile.y,
+			power: val,
+			cost: custom.missileCost(val)
+		}, function(e) {
+			console.log(e);
+			data = JSON.parse(e);
+			Tiles[UI.selectedTile].lastHarvest = UI.now();
+			if (data.error) {
+				addMessage(data.error, '#f88');
+			}
+			tileHtml(UI.selectedTile);
+		});
+		return;
+		fireMissile(Tiles[UI.selectedTile], Tiles[id], val);
+		return;
+	}
+
+	// move unit
+	if (UI.selectedUnit) {
+
+		let a = v(tile.x, tile.y);
+		let b = v(Tiles[UI.selectedUnit.tileID].x, Tiles[UI.selectedUnit.tileID].y);
+
+		if (UI.selectedUnit.owner != Lamden.wallet) {
+			addMessage('Not your unit', '#f88');
+			return false;
+		}
+		if (UI.selectedUnit.target) {
+			World.Sounds[randomArray(['negative1','negative2'])].play();
+			addMessage('Unit still underway, wait until arrival', '#f88');
+			return false;
+		}
+		//let now = UI.now();
+		// cooldown
+		//if (UI.selectedUnit.ready > now) {
+			//World.Sounds[randomArray(['negative1','negative2'])].play();
+			//addMessage('Unit still cooling down, wait until cooldown complete', '#f88');
+			//return false;
+		//}
+		// cant move to same tile
+		if (id == UI.selectedUnit.tileID) {
+			return;
+		}
+
+		let amount = clamp(parseInt($('#split-units').val()) || 0, 0, UI.selectedUnit.troops);
+		if ((Tiles[id].owner && Tiles[id].owner != Lamden.wallet) || (Tiles[id].unit && Tiles[id].unit.owner != Lamden.wallet)) { // attack
+			if (World.offset_distance(Tiles[id], Tiles[UI.selectedUnit.tileID]) > custom.attackDistance()) {
+				World.Sounds[randomArray(['negative1','negative2'])].play();
+				addMessage('Too far to attack', '#f80');
+				return;
+			}
+		} else {
+			if (!UI.path.tiles || UI.path.tiles.length > custom.moveDistance(amount || UI.selectedUnit.troops)) {
+				World.Sounds[randomArray(['negative1','negative2'])].play();
+				addMessage('Inaccessible or too far for this amount of units', '#f80');
+				return;
+			}
+		}
+
+		if (custom.maxOccupancy(Tiles[id]) < (amount || UI.selectedUnit.troops)) {
+			World.Sounds[randomArray(['negative1','negative2'])].play();
+			addMessage('Too many troops for destination tile. ', '#f80');
+			return;
+		}
+
+		if (Tiles[id].unit && Tiles[id].unit.owner == Lamden.wallet && custom.maxOccupancy(Tiles[id]) < UI.selectedUnit.troops + Tiles[id].unit.troops) {
+			World.Sounds[randomArray(['negative1','negative2'])].play();
+			addMessage('Cannot merge, too many troops for destination tile. ', '#f80');
+			return;
+		}
+
+		if (!deductCost({0:UI.selectedUnit.troops})) {
+			return false;
+		}
+		World.Sounds[randomArray(['confirm1','confirm2'])].play();
+
+		let energy = amount || UI.selectedUnit.troops;
+		if (techHasResearched(19)) {
+			energy = Math.ceil(energy * .5);
+		}
+
+		$.post('./move.php', {
+			x: Tiles[UI.selectedUnit.tileID].x,
+			y: Tiles[UI.selectedUnit.tileID].y,
+			x2: Tiles[id].x,
+			y2: Tiles[id].y,
+			amount: amount,
+			cost: {0:energy},
+		}, function(e) {
+			console.log(e);
+			if (UI.path.dispose) {
+				UI.path.dispose();
+				UI.path = {};
+			}
+			let data = JSON.parse(e);
+			console.log(data);
+			if (data.error) {
+				addMessage(data.error, '#f88');
+			}
+		});
+		return;
+	}
+
+
 	// remove path
 	if (UI.path.dispose) {
 		UI.path.dispose();
@@ -352,7 +527,7 @@ canvas.addEventListener('click', () => {
 	// unit selection
 	UI.selectedUnit = null;
 	UI.selectedTile = null;
-	let tile = pos2tile(v(point.x, point.z));
+	UI.launchMissile = false;
 	if (mesh.type == 'unit') { // unit info panel
 		UI.selectedUnit = mesh;
 		UI.unitSelect.material.diffuseColor = mesh.owner == Lamden.wallet ? color(0,1,0) : color(1,0,0);
@@ -372,7 +547,7 @@ canvas.addEventListener('click', () => {
 				//html += '<div id="cooldown"><progress max="30" value="' + (diff) + '"></progress></div>';
 				//html += '<p>Unit still cooling down before next action can be performed. </p>';
 			} else {
-				html += '<p>Right-click on a tile to move there</p>';
+				html += '<p>Left-click on a tile to move there</p>';
 			}
 
 			if (techHasResearched(5)) {
@@ -387,11 +562,13 @@ canvas.addEventListener('click', () => {
 			if (techHasResearched(19)) {
 				html += '<p style="color: #8f8; ">-50% energy cost to move or attack</p>';
 			}
-
+			html += '<p style="color: #f88; ">Warning: unit action switched to left-mouse button, right-click deselects. </p>';
 			html += '<form>';
-			html += 'Select trops if you want to split units:<input type="text" id="split-units" value="' + mesh.troops + '" style="margin: 0; ">';
-			html += '<p>If you want to split this group in two, enter the to be split off amount, then right-click on an friendly nearby tile to move them there. This value is ignored if you attack, ie. you always attack with all available troops on the tile. </p>';
+			html += 'Select troops if you want to split units:<input type="text" id="split-units" value="' + mesh.troops + '" style="margin: 0; ">';
+			html += '<p>If you want to split this group in two, enter the to be split off amount, then left-click on an friendly nearby tile to move them there. This value is ignored if you attack, ie. you always attack with all available troops on the tile. </p>';
 			html += '</form>';
+			html += '<h2>Pick Up</h2>';
+			html += '<button id="pick-up">Pick up</button><p>Store troops in inventory for deployment elsewhere</p>';
 		}
 		$('#info-panel').html(html).show();
 		return;
@@ -401,7 +578,6 @@ canvas.addEventListener('click', () => {
 	if (!UI.mesh) {
 		World.Sounds.tick2.play();
 	}
-	let id = (tile.x) + ',' + (tile.y);
 	UI.selectedTile = id;
 	UI.x = tile.x;
 	UI.y = tile.y;
@@ -409,10 +585,33 @@ canvas.addEventListener('click', () => {
 		colonizeTile();
 		return;
 	}
+	if (UI.tool == 'deploy') {
+		if (UI.availableTiles.indexOf(tile.x + ',' + tile.y) == -1) {
+			addMessage('Cannot place unit here', '#f88');
+			return;
+		}
+		let amount = parseInt($('#unit-amount').val());
+		if (!amount || amount < 0) {
+			addMessage('Enter positive amount', '#f88');
+			return;
+		}
+		if (!deductCost({4: amount})) {
+			return false;
+		}
+		$.post('./deploytroops.php', {
+				x: UI.x,
+				y: UI.y,
+				num: amount
+			}, function(e) {
+			console.log(e);
+		});
+		return;
+	}
 	if (UI.building) {
 		placeBuilding();
 		return;
 	}
+
 
 	if (Tiles[id]) {
 		tileHtml(id);
@@ -431,33 +630,53 @@ function tileHtml(id) {
 		if ([3,4,5].indexOf(parseInt(tile.building)) > 1) {
 			html += '<p> on ' + World.tileTypes[tile.type] + '</p>';
 		}
-		html += '<progress id="building-hp" value="' + tile.currentHP + '" max="' + tile.maxHP + '" title="' + tile.currentHP + '/' + tile.maxHP + '"></progress>';
+		//html += '<progress id="building-hp" value="' + tile.currentHP + '" max="' + tile.maxHP + '" title="' + tile.currentHP + '/' + tile.maxHP + '"></progress>';
+	} else if (!tile.terrain) {
+		html = '<h1>Unexplored (' + tile.x + ',' + tile.y + ')</h1>';
 	} else {
 		html = '<h1>' + World.tileTypes[tile.type].name + ' (' + UI.x + ',' + UI.y + ')</h1>';
 	}
+	html += '<p style="text-align: center; margin: 20px; "><img src="icons/crosshair.png" style="width: 32px; position: relative; top: 10px; " title="Troops on tile (+attack power from buildings)/Tile capacity for troops"> '
+	html += formatNumber(tile.unit ? tile.unit.troops : 0) + (tile.building == 2 ? ' (+2k)' : ' (+100)');
+	html += '/' + formatNumber(custom.maxOccupancy(tile));
+	html += '<img src="icons/shield.png" style="width: 32px; position: relative; top: 10px; margin-left: 20px;  " title="Current HP/Max HP"> ' + (1 || tile.owner == Lamden.wallet ? formatNumber(tile.currentHP) : '?')
+	if (tile.owner == Lamden.wallet && tile.maxHP) {
+		html += '/' + formatNumber(tile.maxHP);
+	}
+	html += '</p>';
 	if (tile.fortification) {
 		html += '<progress id="fortification-hp" value="' + tile.fortification + '" max="' + custom.fortHP() + '" ';
 		html += 'title="' + tile.fortification + '/' + custom.fortHP() + '" style="height: 5px; margin-top: 5px; "></progress>';
 	}
 	if (tile.owner) {
-		html += '<p>Owner: ' + (Lamden.Players[tile.owner] ? Lamden.Players[tile.owner].name : tile.owner) + '</p>';
+		html += '<p style="text-align: center; ">Owner: ' + (Lamden.Players[tile.owner] ? Lamden.Players[tile.owner].name : tile.owner) + '</p>';
 	} else {
 		html += '<p>Uncolonized</p>';
 	}
-	html += '<p>Current troops: <span id="num-troops">' + (tile.unit ? tile.unit.troops : 0) + '</span> (Capacity: ' + custom.maxOccupancy(tile) + ')</p>';
+	// html += '<p>Current troops: <span id="num-troops">' + (tile.unit ? tile.unit.troops : 0) + '</span> (Capacity: ' + custom.maxOccupancy(tile) + ')</p>';
 	if (!tile.owner) {
-		if (!Player.capital && tile.type == 'grass' && Lamden.wallet) {
-			html += '<button id="settle-button">Settle here</button>';
-		} else if (World.ownAdjacentTile(UI.x, UI.y)) {
+		if (!Player.capital) {
+			let available = Lamden.availableCapitals();
+			for (let a in available) {
+				available[a] = available[a].x + ',' + available[a].y;
+			}
+			if (!tile.owner && available.indexOf(id) > -1 && (!tile.terrain || tile.type == 'grass') && Lamden.wallet) {
+				html += '<input id="capital-name" type="text" style="width: 280px; text-align: left; " placeholder="Enter a name...">';
+				html += '<button id="settle-button">Settle here</button>';
+			} else {
+				html += '<p>Cannot settle here</p>';
+			}
+			html += '<button id="next-settle-button">Next Location</button>';
+		//} else if (World.ownAdjacentTile(UI.x, UI.y)) {
 			//html += '<button id="colonize-button">Colonize</button> (100 Energy)';
-			html += 'This tile can be colonized for 100 energy. ';
-		} else {
-			html += '<p class="error">You cannot colonize this tile, it is not adjacent to a tile you own. </p>';
+			//html += 'This tile can be colonized for 100 energy. ';
+		//} else {
+			//html += '<p class="error">You cannot colonize this tile, it is not adjacent to a tile you own. </p>';
 		}
 	}
 
 	if (!tile.fortification && tile.owner == Lamden.wallet) {
-		html += '<button id="fortify-button">Fortify</button><br>' + costHtml({0:1000, 2:1000,4:1000});
+		//html += '<button id="fortify-button">Fortify</button><br>' + costHtml({0:1000, 2:1000,4:1000});
 	}
 
 	if (!tile.building || [3,4,5].indexOf(tile.building) > -1) {
@@ -490,7 +709,9 @@ function tileHtml(id) {
 		}
 		let data = World.buildingData[tile.building];
 		if (data.produces != undefined) {
-			html += '<p>Last Harvest: ' + (now - tile.lastHarvest) + 's ago</p>';
+			html += '<h2>Production</h2>';
+			let lastHarvest = tile.lastHarvest > Player.lastHarvest[data.produces] ? tile.lastHarvest : Player.lastHarvest[data.produces];
+			html += '<p>Last Harvest: ' + (now - lastHarvest) + 's ago</p>';
 			let resource = World.buildingData[tile.building].produces;
 			html += '<dl>';
 			html += '<dt>Mining<dt><dd>' + World.Resources[data.produces].name + '</dd>';
@@ -500,6 +721,7 @@ function tileHtml(id) {
 			//html += '<button id="harvest-button">Harvest</button><br>';
 			html += 'Current Yield: '
 			html += '<img src="icons/ingot.png" style="width: 16px; height: 16px; ">';
+			console.log(tile);
 			html += custom.calcYield(tile) + ' ' + World.Resources[data.produces].name + '<br>';
 			html += 'Click the resource icons on the left to harvest all buildings producing ' + World.Resources[data.produces].name;
 			if ([3,4,5].indexOf(parseInt(tile.building)) > -1) {
@@ -511,6 +733,7 @@ function tileHtml(id) {
 				html += '</ul>';
 			}
 		}
+		/*
 		html += '<h2>Research</h2>';
 		html += '<ul id="techs" style="display: ' + (isResearching(tile.building) ? 'none' : 'block') + '">';
 		for (let t in World.Technologies) {
@@ -522,11 +745,14 @@ function tileHtml(id) {
 			}
 		}
 		html += '</ul>';
-		if ([1,3,4,5,7,8,9,11,12,14].indexOf(parseInt(tile.building)) > -1) { //if building with levels
+		*/
+		if (tile.building) { //if building with levels
 			html += '<button id="levelup-button">Level to ' + (tile.level + 1) + '</button><br>';
 			let cost = World.buildingData[tile.building].cost;
-			html += costHtml(custom.levelUpCost(cost, tile.level + 1));
+			html += '<p style="text-align: center; ">' + costHtml(custom.levelUpCost(cost, tile.level + 1)) + '</p>';
+			html += 'Leveling up increases building HP and production. ';
 		}
+		/*
 		if (tile.building == 11) { // conversions
 			html += '<h2>Refine Goods</h2>';
 			html += '<dl>';
@@ -573,6 +799,8 @@ function tileHtml(id) {
 			html += '<button id="convert-button">Convert</button>';
 			html += '</form>';
 		}
+		*/
+		/*
 		if ([8,9,12].indexOf(tile.building) > -1) {
 			html += '<h2>Train Troops</h2><dl>';
 			html += '<dt>Rate</dt><dd>' + custom.trainRate(tile) + ' troops/min</dd>';
@@ -589,10 +817,11 @@ function tileHtml(id) {
 			html += '</div>';
 			html += '<button id="train-troops" style="display: ' + (!isTraining(tile) && !trainingFinished(tile) ? 'block' : 'none') + '; ">Train</button><br>' + custom.trainDuration(tile) + ' seconds';
 		}
+		*/
 		if (tile.building == 14) {
 			html += '<h2>Launch Missile</h2>';
 			html += '<p>Silo Range: ' + (tile.level + 3) + ' tiles</p>';
-			if (tile.lastHarvest + 3600 > UI.now()) {
+			if (tile.lastHarvest + 3.600 > UI.now()) {
 				let current = UI.now() - tile.lastHarvest;
 				let progress = current / 3600;
 				html += 'Cooldown';
@@ -662,10 +891,11 @@ UI.cancel = function() {
 	UI.selectedTile = null;
 	UI.selectedUnit = null;
 	UI.tileSelect.position.y = -1;
+	UI.unitSelect.position.y = -1;
 	$('#info-panel').fadeOut();
 }
 window.addEventListener('keydown', (e) => {
-	if (e.target.name == 'body') {
+	if (e.target.name == 'body' || e.target.id == 'capital-name') {
 		return true;
 	}
 	if (e.keyCode == 27) { // esc
@@ -693,7 +923,12 @@ window.addEventListener('keydown', (e) => {
 	}
 	if (e.keyCode == 88) { // X
 		UI.settings.namplates = !UI.settings.namplates;
-		$('#labels').toggle();
+		//$('#labels').toggle();
+		if (UI.settings.namplates) {
+			$('#labels div').css({display: 'block'});
+		} else {
+			$('#labels div').css({display: 'none'});
+		}
 	}
 });
 canvas.addEventListener('contextmenu', () => {
@@ -711,60 +946,11 @@ canvas.addEventListener('contextmenu', () => {
 	let id = (tile.x) + ',' + (tile.y);
 
 	// contextmenu
-	if (UI.building || UI.tool == 'colonize') {
+	if (1 || UI.building || UI.tool == 'colonize' || UI.tool == 'deploy') {
 		UI.cancel();
 		return;
 	}
-
-	// fire missile from silo
-	if (UI.selectedTile && UI.selectedTile != id && UI.launchMissile) {
-		let a = v(tile.x, tile.y);
-		let b = v(UI.x, UI.y);
-		if (World.offset_distance(a, b) > 3 + Tiles[UI.selectedTile].level) {
-			addmessage('Too far for this missile silo. ', '#f88');
-			return false;
-		}
-
-		UI.launchMissile = false;
-		UI.tileTarget.position.y = -100;
-		let val = parseInt($('#missile-power').val());
-		// get power
-		if (!val || val <= 0) {
-			addMessage('Enter a positive value for power');
-			World.Sounds.tick1.play();
-			return false;
-		}
-		let tile = Tiles[UI.selectedTile];
-		if (tile.lastHarvest + 1800 > UI.now()) {
-			addMessage('Cooldown not finished. ');
-			World.Sounds.tick1.play();
-			return false;
-		}
-		if (!deductCost(custom.missileCost(val))) {
-			World.Sounds.tick1.play();
-			return false;
-		}
-		$.post('./missile.php', {
-			x: Tiles[UI.selectedTile].x,
-			y: Tiles[UI.selectedTile].y,
-			x2: tile.x,
-			y2: tile.y,
-			power: val,
-			cost: custom.missileCost(val)
-		}, function(e) {
-			console.log(e);
-			data = JSON.parse(e);
-			tile.lastHarvest = UI.now();
-			if (data.error) {
-				addMessage(data.error, '#f88');
-			}
-			tileHtml(UI.selectedTile);
-	});
-		return;
-		fireMissile(Tiles[UI.selectedTile], Tiles[id], val);
-		return;
-	}
-
+/*
 	if (!UI.selectedUnit) {
 		return false;
 	}
@@ -781,26 +967,18 @@ canvas.addEventListener('contextmenu', () => {
 		return false;
 	}
 	//let now = UI.now();
+	// cooldown
 	//if (UI.selectedUnit.ready > now) {
 		//World.Sounds[randomArray(['negative1','negative2'])].play();
 		//addMessage('Unit still cooling down, wait until cooldown complete', '#f88');
 		//return false;
 	//}
+	// cant move to same tile
 	if (id == UI.selectedUnit.tileID) {
 		return;
 	}
-/*	// now handled in pathfinding
-	if (UI.selectedUnit.name == 'Ship' && Tiles[id].type != 'water') {
-		World.Sounds[randomArray(['negative1','negative2'])].play();
-		addMessage('Cannot move ship on land', '#f88');
-		return;
-	}
-	if (UI.selectedUnit.name != 'Ship' && Tiles[id].type == 'water') {
-		World.Sounds[randomArray(['negative1','negative2'])].play();
-		addMessage('Cannot move unit on water', '#f88');
-		return;
-	} */
 
+	let amount = clamp(parseInt($('#split-units').val()) || 0, 0, UI.selectedUnit.troops);
 	if ((Tiles[id].owner && Tiles[id].owner != Lamden.wallet) || (Tiles[id].unit && Tiles[id].unit.owner != Lamden.wallet)) { // attack
 		if (World.offset_distance(Tiles[id], Tiles[UI.selectedUnit.tileID]) > custom.attackDistance()) {
 			World.Sounds[randomArray(['negative1','negative2'])].play();
@@ -808,14 +986,13 @@ canvas.addEventListener('contextmenu', () => {
 			return;
 		}
 	} else {
-		if (!UI.path.tiles || UI.path.tiles.length > custom.moveDistance(UI.selectedUnit.troops)) {
+		if (!UI.path.tiles || UI.path.tiles.length > custom.moveDistance(amount || UI.selectedUnit.troops)) {
 			World.Sounds[randomArray(['negative1','negative2'])].play();
-			addMessage('Inacessible or too far for this amount of units', '#f80');
+			addMessage('Inaccessible or too far for this amount of units', '#f80');
 			return;
 		}
 	}
 
-	let amount = clamp(parseInt($('#split-units').val()) || 0, 0, UI.selectedUnit.troops);
 	if (custom.maxOccupancy(Tiles[id]) < (amount || UI.selectedUnit.troops)) {
 		World.Sounds[randomArray(['negative1','negative2'])].play();
 		addMessage('Too many troops for destination tile. ', '#f80');
@@ -853,53 +1030,11 @@ canvas.addEventListener('contextmenu', () => {
 		}
 		let data = JSON.parse(e);
 		console.log(data);
-/*		if (UI.selectedUnit) {
-			if (!deductCost({0:UI.selectedUnit.troops})) {
-				return false;
-			}
-//			Tiles[UI.selectedUnit.tileID].unit = null;
-		} */
-/*		if (Tiles[id].unit && Tiles[id].unit.owner != Lamden.wallet) { // attack units
-			if (distance(UI.selectedUnit.position, Tiles[id].unit.position) > 60) {
-				addMessage('Too far to attack', '#f88');
-			}
-			UI.selectedUnit.lookAt(Tiles[id].unit.position);
-			Tiles[id].unit.lookAt(UI.selectedUnit.position);
-			UI.selectedUnit.ready = now + 30;
-			battle(UI.selectedUnit, Tiles[id].unit, data[0].numTroops, data[1].numTroops);
-			return;
-		}*/
-/*		if (Tiles[id].building && Tiles[id].owner != Lamden.wallet) { // attack buildings/forts
-			UI.selectedUnit.lookAt(Tiles[id].pos);
-			let unit = UI.selectedUnit;
-			let tile = Tiles[id];
-			UI.selectedUnit.ready = now + 30;
-			window.setTimeout(function() {
-				siege(unit, tile, data[0].numTroops, data[1].hp);
-			}, 1000);
-			return;
-
-		}*/
-/*		if (Tiles[id].unit && Tiles[id].unit.owner == Lamden.wallet) { // merge units
-			let troops = parseInt(UI.selectedUnit.troops);
-			UI.selectedUnit.dispose();
-			Tiles[id].unit.troops += troops;
-			addMessage('Units merged. now counting ' + Tiles[id].unit.troops);
-			UI.selectedUnit = Tiles[id].unit; // change selection to
-			UI.selectedUnit.ready = now + 30;
-			return;
-		}*/
-
-		// move unit
-/*		UI.selectedUnit.lookAt(tilePos);
-		UI.selectedUnit.target = tilePos;
-		UI.selectedUnit.tileID = id;
-		UI.selectedUnit.ready = now + 30;
-		if (UI.selectedUnit.mesh) {
-			scene.beginAnimation(UI.selectedUnit.mesh, 51, 80, true, 1);
+		if (data.error) {
+			addMessage(data.error, '#f88');
 		}
-		Tiles[id].unit = UI.selectedUnit; */
 	});
+	*/
 });
 
 function moveUnit(a, b) {
@@ -968,6 +1103,14 @@ scene.registerBeforeRender(function() {
 	}
 });
 
+$('#info-panel').on('click', '#pick-up', function(e) {
+	console.log(1);
+	let amount = clamp(parseInt($('#split-units').val()) || 0, 0, UI.selectedUnit.troops);
+	$.post('./pickup.php', {x: Tiles[UI.selectedUnit.tileID].x, y: Tiles[UI.selectedUnit.tileID].y, amount: amount}, function(e) {
+		console.log(e);
+	});
+});
+
 function setBuildingData(tile, id, owner, constructionFinished) {
 	if (!tile) {
 		console.log(id);
@@ -983,17 +1126,17 @@ function setBuildingData(tile, id, owner, constructionFinished) {
 		return;
 	}
 	addBuilding(tile);
-	updateSPSMeshes();
+	//updateSPSMeshes();
 	tile.lastHarvest = Math.round((new Date()).getTime() / 1000);
 	if ([8,9,11,12].indexOf(id) > -1) { // refinery/barracks
 		tile.collected = true;
 	}
 	let buildingData = World.buildingData[id];
+	tile.level = 1;
 	let hp = custom.buildingHP(tile);
 	tile.currentHP = hp;
 	tile.maxHP = hp;
 	tile.power = buildingData.power;
-	tile.level = 1;
 	if (constructionFinished) {
 		tile.constructionFinished = constructionFinished;
 	}
@@ -1006,8 +1149,13 @@ function placeBuilding() {
 		return false;
 	}
 
-	if (Tiles[UI.x + ',' + UI.y].owner != Lamden.wallet) {
+	/*if (Tiles[UI.x + ',' + UI.y].owner != Lamden.wallet) {
 		addMessage('Tile not colonized by you', '#f88');
+		World.Sounds.tick1.play();
+		return false;
+	}*/
+	if (UI.availableTiles.indexOf(UI.x + ',' + UI.y) == -1) {
+		addMessage('No troops on tile or not adjacent to a building you own or adjacent to enemy territory', '#f88');
 		World.Sounds.tick1.play();
 		return false;
 	}
@@ -1044,9 +1192,13 @@ function placeBuilding() {
 //		setBuildingData(Tiles[tile], id, Lamden.wallet,  UI.now() + 2);
 		addMessage(World.buildingData[id].name + ' created');
 		Tiles[UI.selectedTile].constructionFinished = UI.now() + 30;
+		Tiles[UI.selectedTile].lastHarvest = UI.now();
 		// remove dragger mesh
 		UI.building = null;
+		deleteHighlight();
 		World.Sounds['upgrade2'].play();
+		addCombatText(World.buildingData[id].name, getScreenCoords(Tiles[UI.selectedTile].pos));
+		World.drawWorld(true);
 		if (UI.mesh &&  scene.meshes.indexOf(UI.mesh) > -1) {
 			UI.mesh.dispose();
 			UI.mesh = null;
@@ -1233,6 +1385,7 @@ $('#info-panel').on('click', '#collect-troops-button', function(e) {
 	if (custom.maxOccupancy(Tiles[UI.selectedTile]) < (Tiles[UI.selectedTile].unit ? Tiles[UI.selectedTile].unit.troops : 0) + Tiles[UI.selectedTile].trainAmount) {
 		World.Sounds.tick1.play();
 		addMessage('Too many troops for destination tile. ', '#f88');
+		return;
 	}
 
 	$('#collect-troops-button').hide();
@@ -1285,8 +1438,11 @@ $('#info-panel').on('click', '#levelup-button', function(e) {
 			addMessage(data.error, '#f88');
 			return;
 		}
+
 		World.Sounds.upgrade1.play();
 		Tiles[UI.selectedTile].level++;
+		Tiles[UI.selectedTile].currentHP = custom.buildingHP(Tiles[UI.selectedTile]);
+		Tiles[UI.selectedTile].maxHP = custom.buildingHP(Tiles[UI.selectedTile]);
 		tileHtml(UI.selectedTile);
 	});
 });
@@ -1311,7 +1467,7 @@ $('#info-panel').on('click', '#demolish-button', function(e) {
 
 function updateUnitCount(num) {
 	Player.unitCount = parseInt(num);
-	$('#unit-count').text(Player.unitCount);
+	$('#unit-count').text(formatNumber(Player.unitCount, 1));
 }
 function checkPlayerResource(id, amount) {
 	if (amount <= 0) {
@@ -1325,6 +1481,7 @@ function checkPlayerResource(id, amount) {
 
 // fixed: number of decimals to show
 function formatNumber(num, fixed) {
+	// https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn
 	num = parseInt(num);
 	if (!num) {
 		return 0;
@@ -1396,13 +1553,33 @@ $('#info-panel').on('click', '#settle-button', function(e) {
 		World.Sounds.tick1.play();
 		return false;
 	}
-	$.post('./settle.php', {x: UI.x, y: UI.y, owner: Lamden.wallet}, function(e) {
+	let name = $('#capital-name').val();
+	if (!name) {
+		addMessage('Enter a name. ', '#f88');
+		World.Sounds.tick1.play();
+		return false;
+	}
+	$.post('./settle.php', {x: UI.x, y: UI.y, owner: Lamden.wallet, name: name}, function(e) {
 		console.log(e);
 		var data = JSON.parse(e);
 		addMessage('Settled at [' + data.x + ',' + data.y + ']');
 		Lamden.getCapital();
 	});
 });
+$('#info-panel').on('click', '#next-settle-button', function(e) {
+	let available = Lamden.availableCapitals();
+	let tile = randomArray(available);
+	camera.target.target = mapPosition(tile.x, tile.y);
+	if (!Tiles[tile.x + ',' + tile.y]) {
+		Tiles[tile.x + ',' + tile.y] = {type: 'grass', pos: mapPosition(tile.x, tile.y), x: tile.x, y: tile.y};
+	}
+	UI.x = tile.x;
+	UI.y = tile.y;
+	UI.selectedTile =  UI.x + ',' + UI.y;
+	UI.tileSelect.position = mapPosition(tile.x, tile.y).add(v(0,.09,0));
+	tileHtml(tile.x + ',' + tile.y);
+});
+
 //$('#info-panel').on('click', '#colonize-button', function(e) {
 // colonizes selected tile
 function deleteHighlight() {
@@ -1440,6 +1617,20 @@ function colonizeMode() {
 	updateSPSMeshes();
 }
 $('#colonize-button').click(colonizeMode);
+
+function deployMode() {
+	deleteHighlight();
+	UI.tool = 'deploy';
+	UI.mesh = World.assets['Flag'].clone('Drag');
+	for (var t in Tiles) {
+		if (Tiles[t].owner == Lamden.wallet || (Tiles[t].unit && Tiles[t].unit.owner == Lamden.wallet)) {
+			UI.availableTiles.push(Tiles[t].x + ',' + Tiles[t].y);
+			addModel(UI.tileHighlight, Tiles[t].pos.add(v(0,.1,0)), v(Math.PI/2,0,0), 1);
+		}
+	}
+	updateSPSMeshes();
+}
+$('#deploy-button').click(deployMode);
 function colonizeTile() {
 	if (Tiles[UI.x + ',' + UI.y].owner) {
 		addMessage('This tile is already owned', '#f88');
@@ -1493,23 +1684,28 @@ $('#info-panel').on('click', '#fortify-button', function(e) {
 	});
 });
 
-/*$('#minimap').load(function() {
-	$('#minimap').click(function(e) {
-		let x = e.pageX - $('#minimap').offset().left;
-		let y = e.pageY - $('#minimap').offset().top;
-		console.log(x, y);
-	});
-});*/
 $('#minimap').load(function(){
-
         var iframe = $('#minimap').contents();
-
         iframe.find('canvas').click(function(e) {
-			let x = e.pageX - 512; // - $('#minimap').offset().left;
-			let y = e.pageY - 512; // - $('#minimap').offset().top;
+			let x = e.pageX / 2 - 256; // / 2 - 512 + 100; // - $('#minimap').offset().left;
+			let y = 256 - e.pageY / 2; // / 2 - 512 + 100; // - $('#minimap').offset().top;
 			console.log(x, y);
-			camera.target.position = mapPosition(x, y).clone();
+			camera.target.target = mapPosition(x, y).clone();
         });
+        iframe.find('canvas').mousemove(function(e) {
+			let x = e.pageX / 2 - 256; // / 2 - 512 + 100; // - $('#minimap').offset().left;
+			let y = 256 - e.pageY / 2; // / 2 - 512 + 100; // - $('#minimap').offset().top;
+        });
+});
+// pan camera to target
+scene.registerBeforeRender(function() {
+	if (camera.target.target) {
+		let delta = camera.target.position.subtract(camera.target.target).scale(-2 / engine.fps);
+		camera.target.position.addInPlace(delta);
+		if (distance(camera.target.position, camera.target.target) < 10) {
+			camera.target.target = null;
+		}
+	}
 });
 
 $('#actions').on('mouseover', '#buildings a', function(e) {
@@ -1519,11 +1715,37 @@ $('#actions').on('mouseover', '#buildings a', function(e) {
 	html += costHtml(World.buildingData[id].cost);
 	$('#tooltip').css({left: e.pageX - 20, top: e.pageY - 100}).html(html).show();
 });
+
+
 $('#actions').on('click', '#buildings a', function(e) {
+	deleteHighlight();
+	UI.tool = 'build';
+	for (var t in Tiles) {
+		if (Tiles[t].unit && Tiles[t].unit.owner == Lamden.wallet && !Tiles[t].building) {
+			let ownsNeigbors = false;
+			let enemyAdjacent = false;
+			let neighbors = World.getAdjacentTiles(Tiles[t].x, Tiles[t].y);
+			for (let n in neighbors) {
+				if (neighbors[n].owner == Lamden.wallet && neighbors[n].building) {
+					ownsNeigbors = true;
+				}
+				if (neighbors[n].owner && neighbors[n].owner != Lamden.wallet) {
+					enemyAdjacent = true;
+				}
+			}
+			if (ownsNeigbors && !enemyAdjacent) {
+				console.log(t);
+				UI.availableTiles.push(Tiles[t].x + ',' + Tiles[t].y);
+				addModel(UI.tileHighlight, Tiles[t].pos.add(v(0,.1,0)), v(Math.PI/2,0,0), 1);
+			}
+		}
+	}
+	updateSPSMeshes();
+
+
 	let id = $(e.target.parentNode).attr('data-id') || $(e.target).attr('data-id');
 	UI.building = id;
 	// remove previous drag mesh
-	deleteHighlight();
 
 	// add new drag mesh
 	UI.mesh = World.assets[World.buildingData[id].mesh].clone('Drag');
@@ -1613,51 +1835,92 @@ $('#info-panel').on('click', '#create-ship button', function() {
 	updateUnitCount(1000);
 });
 */
-function addMessage(message, c) {
+
+$('#chat-tabs li').click(function(e) {
+	let tab = $(e.target).attr('data-tab');
+	$('#chat-panel > *').hide();
+	$('#chat-tabs li').removeClass('active');
+	$('#' + tab).show();
+	$('[data-tab=' + tab + ']').addClass('active');
+	if (tab != 'log') {
+		$('#chat-panel form').show();
+	}
+
+});
+function addMessage(message, c, tab) {
 	c = c || '#fff';
-	$('#chat-panel ul').append('<li style="color: ' + c + '">' + message + '</li>');
+	tab = tab || 'log';
+	// xss
+	message = message.replace(/[&<>'"]/g, str => ({'&': '&amp;','<': '&lt;','>': '&gt;',"'": '&#39;','"': '&quot;'}[message] || message));
+	// coords links
+	message = message.replace(/\[([0-9-]+),([0-9-]+)\]+/gm, '<a data-x="$1" data-y="$2">[$1,$2]</a>');;
+	$('#chat-panel #' + tab).append('<li style="color: ' + c + '">' + message + '</li>');
+	$('#chat-panel #all').append('<li style="color: ' + c + '">' + message + '</li>');
 	$('#loading-screen p').html(message);
-	$("#chat-panel ul").scrollTop($("#chat-panel ul")[0].scrollHeight);
+	$('#chat-panel #' + tab).scrollTop($('#chat-panel #' + tab)[0].scrollHeight);
+	$('#chat-panel #all').scrollTop($('#chat-panel #all')[0].scrollHeight);
 }
 $('#chat-panel form').submit(function(e) {
 	e.preventDefault();
 	if (!$('#chat-panel input[name=body]').val()) {
 		return;
 	}
-	$.post('./chat.php', {player: Lamden.wallet, body: $('#chat-panel input[name=body]').val()}, function(e) {
+	$.post('./chat.php', {player: Lamden.Players[Lamden.wallet].name, body: $('#chat-panel input[name=body]').val()}, function(e) {
 		$('#chat-panel input[name=body]').val('');
 	});
 	return false;
 });
-$.get('./chat.php?lastid', function(e) {
-	console.log(e);
-	UI.lastChatID = parseInt(e) || 0;
-	window.setInterval(function() {
-		$.get('chat.php?id=' + UI.lastChatID, function(e) {
-//			console.log(e);
-			let data = JSON.parse(e);
-			for (let i in data) {
-				var d = new Date(data[i].stamp * 1000);
-				var h = d.getHours();
-				var m = d.getMinutes();
-				if (m < 10) {
-					m = '0' + m;
+function initChat() {
+	$.get('./chat.php?lastid', function(e) {
+		console.log(e);
+		UI.lastChatID = parseInt(e) || 0;
+		window.setInterval(function() {
+			$.get('chat.php?id=' + UI.lastChatID, function(e) {
+	//			console.log(e);
+				let data = JSON.parse(e);
+				for (let i in data) {
+					var d = new Date(data[i].stamp * 1000);
+					var h = d.getHours();
+					var m = d.getMinutes();
+					if (m < 10) {
+						m = '0' + m;
+					}
+					if (h > 12) {
+						var date = (h - 12) + ':' + m + ' PM';
+					} else if (h == 0) {
+						var date = 12 + ':' + m + ' AM';
+					} else {
+						var date = h + ':' + m + ' AM';
+					}
+					let body = data[i].body;
+					addMessage('[' + date + '] ' + formatName(data[i].name) + ': ' + body, '#fff', 'chat');
+					if (data[i].id > UI.lastChatID) {
+						UI.lastChatID = data[i].id;
+					}
 				}
-				if (h > 12) {
-					var date = (h - 12) + ':' + m + ' PM';
-				} else if (h == 0) {
-					var date = 12 + ':' + m + ' AM';
-				} else {
-					var date = h + ':' + m + ' AM';
-				}
-				addMessage('[' + date + '] ' + data[i].name + ': ' + data[i].body);
-				if (data[i].id > UI.lastChatID) {
-					UI.lastChatID = data[i].id;
-				}
-			}
-		});
-	}, 1000);
+			});
+		}, 1000);
+	});
+}
+$('#chat-panel').on('click', 'a[data-x]', function(e) {
+	let x = $(e.target).attr('data-x');
+	let y = $(e.target).attr('data-y');
+	camera.target.target = mapPosition(x, y);
 });
+$('#players').on('click', 'li[data-x]', function(e) {
+	let x = $(e.target).attr('data-x');
+	let y = $(e.target).attr('data-y');
+	camera.target.target = mapPosition(x, y);
+});
+
+function addCombatText(text, coords, color) {
+	color = color || '#fff';
+	$('#labels').append(
+		$('<a style="left: ' + coords.x + 'px; top: ' + coords.y + 'px; color: ' + color + '">' + text + '</a>'
+		).animate({top: (coords.y - 100) + 'px', opacity: 0}, 3000)
+	);
+}
+
 
 // task done indication for tiles
 function checkTerritory() {
@@ -1685,7 +1948,7 @@ function checkTerritory() {
 		}
 	}
 }
-window.setInterval(checkTerritory, 5000);
+//window.setInterval(checkTerritory, 5000);
 
 // a and b are vector2s  with x and y properties
 // not usable on hex grid
@@ -1753,9 +2016,10 @@ function pathFinding(a, b) {
 			let id = neighbors[n].x + ',' + neighbors[n].y;
 			let isEnemy = Tiles[id].owner && Tiles[id].owner != owner;
 			let isPassable = (naval && Tiles[id].type == 'water') || (!naval && Tiles[id].type != 'water');
+			let isDiscovered = Tiles[id].terrain != undefined;
 			let isDestination = id == (b.x + ',' + b.y);
 			// avoid enemy territory, only destination tile on enemy territory allowed (ie. you can only attack the edge of enemy territory)
-			if (!open[id] && !done[id] && isPassable && (!isEnemy || isDestination)) {
+			if (!open[id] && !done[id] && (isPassable || (isDestination && !isDiscovered)) && (!isEnemy || isDestination)) {
 				open[id] = {x: neighbors[n].x, y: neighbors[n].y, travelled: open[current].travelled + 1, distance: open[current].travelled + World.offset_distance(neighbors[n], b), last: current};
 			}
 		}

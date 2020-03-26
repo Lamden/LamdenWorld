@@ -7,7 +7,9 @@ html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-s
 #fps-counter { position: fixed; bottom: 5px; left: 0px; width: 200px; text-align: center; z-index: 8;
 	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
 
-#labels { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+#labels { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#labels a { position: fixed; font-size: 180%; font-weight: bold; width: 200px; margin-left: -100px; color: #8f8; text-align: center;
+	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
 #labels div { position: fixed; background: url(images/bg.jpg); padding: 5px; max-width: 200px; text-align: center;
 	border: 3px solid transparent; border-image: url(images/border.png) 6; box-shadow: inset 0 0 4px #000, inset 0 0 4px #000; }
 
@@ -16,16 +18,21 @@ html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-s
 #unit-count:after { position: fixed; top: 30px; left: 50%; margin-left: -40px; width: 80px; background: #000;
 	font-size: 60%; content: "units"; }
 
-#resources, #actions, #minimap, #chat-panel, #tabs, #info-panel { position: fixed; border: 6px solid transparent;
+#resources, #players, #actions, #minimap, #chat-panel, #tabs, #info-panel, #chat-tabs li { position: fixed; border: 6px solid transparent;
 	border-image: url(images/border.png) 8; background: url(images/bg.jpg);
 	box-sizing: border-box; box-shadow: inset 0 0 10px #000, inset 0 0 10px #000, inset 0 0 10px #000; }
 
-#resources { width: 150px; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,.6); padding: 5px; height: auto;
-	margin-bottom: 200px; background-image: url(images/bg2.jpg); box-shadow: inset 0 0 3px #000; }
+#resources { width: 150px; left: 0; top: 0; height: 300px; background: padding: 5px;
+	background-image: url(images/bg2.jpg); box-shadow: inset 0 0 3px #000; }
 #resources li { float: left; width: 48px; height:48px; display: block; position: relative; margin: 5px; }
 #resources img { width: 48px; height: 48px; cursor: pointer; }
 #resources span { position: absolute; bottom: 0 ; right: 0;
 	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
+
+#players { width: 150px; left: 0; top: 300px; bottom: 200px; height: auto; padding: 5px;
+	box-shadow: inset 0 0 3px #000; }
+#players li { padding: 5px; }
+#players li:hover { color: #8cf; cursor: pointer; }
 
 #marketplace { position: fixed; width: 500px; padding: 10px; top: 100px; left: 100px; background: rgba(0,0,0,.6);
 	display: none; }
@@ -37,6 +44,7 @@ table .num { text-align: right; }
 	display: none; box-sizing: content-box; overflow-y: auto; }
 h2 { margin-top: 10px; }
 #info-panel progress { width: 300px; }
+#info-panel p { padding: 5px; }
 #info-panel li {  display: block; font-size: 80%; }
 #info-panel b { display: block; font-size: 120%; }
 #info-panel li img:first-child { width: 40px; height: 40px; margin: 0px 5px; float: left; }
@@ -44,21 +52,29 @@ h2 { margin-top: 10px; }
 #info-panel li a:hover { background: rgba(255,255,255,.2); cursor: pointer; }
 select, input[type=text] { width: 250px; margin: 5px 0; padding: 5px; color: #000; background: #444; color: #ccc; text-align: right;
 	border: 6px solid transparent; border-image: url(images/border.png) 8; box-shadow: inset 0 0 4px #000, inset 0 0 4px #000; }
+input::placeholder { color: #ccc; }
 option { color: #aaa; padding: 5px; }
 input[type=text] { width: 100px; }
 button { color: #000; padding: 0px 20px; background: url(images/button2.png); background-size: cover; line-height: 30px;
-	width: 150px; border: none; color: #fff; cursor: pointer; margin-left: 60px; font-size: 115%; margin-top: 15px;
+	width: 150px; border: none; color: #fff; cursor: pointer; margin-left: 75px; font-size: 115%; margin-top: 15px;
 	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
 button:hover { background-color: #935; }
 #demolish-button { position: absolute; bottom: 10px; left: 30px; }
 
-#info-panel dt { float: left; }
-#info-panel dd { text-align: right; }
+#info-panel dt { float: left; padding: 5px; }
+#info-panel dd { text-align: right; padding: 5px; border-bottom: 1px solid #888; }
 
 #minimap { position: fixed; bottom: 0px; left: 0px; width: 200px; height: 200px; background: rgba(128,128,128,1); }
+#chat-tabs { position: fixed; bottom: 192px; left: 220px; }
+#chat-tabs li { position: relative; display: inline-block; width: 100px; height: 40px; text-align: center; line-height: 28px;
+	border-width: 3px; border-bottom: none; cursor: pointer; }
+#chat-tabs li.active { background-image: url(images/bg2.jpg); font-weight: bold; box-shadow: inset 0 0 3px #000; }
+
 #chat-panel { bottom: 0px; left: 200px; width: 400px; height: 200px; }
 #chat-panel li { display: block; }
-#chat-panel ul { overflow-y: scroll; height: 135px; padding: 10px; }
+#chat-panel ul { overflow-y: scroll; height: 135px; padding: 10px; overflow-x: hidden; }
+#chat-panel #log { height: 170px; }
+#chat-panel a { color: #acf; cursor: pointer; }
 #chat-panel form { position: fixed; bottom: 0; margin: -5px; }
 #chat-panel input { width: 400px; text-align: left; }
 
@@ -71,7 +87,12 @@ button:hover { background-color: #935; }
 #actions img:hover { position: relative; top: -1px; left: -1px; filter: drop-shadow(3px 3px 5px #000); }
 #tabs { bottom: 0px; right: 0px; padding: 10px; width: 200px; height: 140px; background-image: url(images/bg2.jpg);
 	box-shadow: inset 0 0 3px #000; display: none; }
+
 #colonize-button { position: fixed; bottom: 5px; right: 5px; width: 128px; height: 128px; cursor: pointer; }
+#unit-amount { position: fixed; bottom: 85px; right: 100px; width: 72px; }
+#deploy-button { position: fixed; bottom: 55px; right: 5px; width: 72px; height: 72px; cursor: pointer; }
+#defense-button { position: fixed; bottom: 5px; right: 80px; width: 72px; height: 72px; cursor: pointer; }
+
 #tabs li { display: block; cursor: pointer; margin-left: -0px; }
 #tabs li img { width: 52px; height: 52px; }
 
@@ -92,6 +113,7 @@ button:hover { background-color: #935; }
 <canvas id="renderCanvas"></canvas>
 <section id="labels"></section>
 <ul id="resources"></ul>
+<ul id="players"></ul>
 <section id="info-bar">
 	<p id="unit-count">0</p>
 </section>
@@ -111,19 +133,28 @@ button:hover { background-color: #935; }
 	</form>
 </section>
 <section id="info-panel"></section>
-<iframe id="minimap" src="map.html" scrolling="no"></iframe>
-<section id="chat-panel"><ul>
-	<li>Welcome to <img src="images/lamden.svg" style="width: 15px; height: 15px; "> LamdenWorld v0.1</li>
-</ul><form>
+<iframe id="minimap" src="about:blank" scrolling="no"></iframe>
+<ul id="chat-tabs">
+	<li data-tab="all" class="active">All</li>
+	<li data-tab="chat">Chat</li>
+	<li data-tab="log">Log</li>
+</ul>
+<section id="chat-panel">
+	<ul id="all"><li>Welcome to <img src="images/lamden.svg" style="width: 15px; height: 15px; "> LamdenWorld v0.11</li></ul>
+	<ul id="chat"></ul>
+	<ul id="log" style="display: none; "></ul>
+<form>
 <input type="text" name="body" autocomplete="off" placeholder="Say something...">
 </form></section>
 <section id="actions"></section>
 <section id="tabs">
-<img id="colonize-button" src="icons/flag.png" title="Colonize">
+<input type="text" id="unit-amount" value="100">
+<img id="deploy-button" src="icons/crosshair.png" title="Deploy Troops to territory">
+<img id="defense-button" src="icons/shield.png" title="Deploy Defense to territory">
 <ul>
-	<li data-tab="build"><img src="icons/house.png" title="Build Tab"></li>
+	<!--<li data-tab="build"><img src="icons/house.png" title="Build Tab"></li>-->
 	<!--<li data-tab="attack"><img src="icons/missile.png"></li>-->
-	<li data-tab="defense"><img src="icons/shield.png" title="Defense Tab"></li>
+	<!--<li data-tab="defense"><img src="icons/shield.png" title="Defense Tab"></li>-->
 </ul></section>
 <section id="tooltip"></section>
 <section id="settings">
@@ -146,9 +177,9 @@ button:hover { background-color: #935; }
 <script src="core.js"></script>
 <script src="blendMaterial.js"></script>
 <script src="watermaterial.js"></script>
-<script src="world.js?2"></script>
-<script src="ui.js?2"></script>
-<script src="custom.js?1"></script>
+<script src="world.js?3"></script>
+<script src="ui.js?4"></script>
+<script src="custom.js?2"></script>
 <script>
 camera.lowerBetaLimit = .1;
 camera.upperBetaLimit = Math.PI * .4;
@@ -180,6 +211,21 @@ const Lamden = {
 	Players: {},
 	initWallet(e) {
 		lamdenInfo = e.detail;
+		console.log(lamdenInfo);
+		if (lamdenInfo.errors) {
+			addMessage(lamdenInfo.errors[0]);
+			const detail = JSON.stringify({
+				appName: 'LamdenWorld',
+				description: 'RTS game under development. RTS Game under development. RTS Game under development. ',
+				logo: './',
+				contractName: 'con_lw',
+				networkType: 'testnet',
+				//reapprove: true,
+			})
+
+			document.dispatchEvent(new CustomEvent('lamdenWalletConnect', {detail}));
+			return;
+		}
 		if (!lamdenInfo.installed) {
 			addMessage('Lamden Wallet Extension not found, <a href="https://github.com/Lamden/wallet">download here</a>', '#f88');
 			return;
@@ -188,21 +234,22 @@ const Lamden = {
 			addMessage('Lamden Wallet locked, please login your Lamden wallet.', '#f88');
 			return;
 		}
-		let net = lamdenInfo.currentNetwork;
-		addMessage('Connected to ' + net.name + ' ' + net.ip + ':' + net.port, '#8cf');
+		//let net = lamdenInfo.currentNetwork;
+		//addMessage('Connected to ' + net.name + ' ' + net.ip + ':' + net.port, '#8cf');
 		console.log(lamdenInfo);
-		if (!lamdenInfo.currentNetwork.online) {
-			addMessage('' + net.name + ' not online', '#f88');
-		}
+//		if (!lamdenInfo.currentNetwork.online) {
+//			addMessage('' + net.name + ' not online', '#f88');
+//		}
 		if (!lamdenInfo.wallets[0]) {
-			lamdenInfo.wallets = [{vk: '01a5a54c53777f0996d5b940e1890a555d5ab31af0e52e00efd3d70dd07e14ac'}];
+			//lamdenInfo.wallets = [{vk: '01a5a54c53777f0996d5b940e1890a555d5ab31af0e52e00efd3d70dd07e14ac'}];
 			addMessage('No primary wallet found in your Lamden account', '#f88');
-			//return false;
+			return false;
 		}
-		Lamden.wallet = lamdenInfo.wallets[0].vk;
+		Lamden.wallet = lamdenInfo.wallets[0];
 		Lamden.wallet = prompt('wallet');
 		addMessage('Using wallet ' + Lamden.wallet.substr(0,16) + '...', '#8cf');
-		Lamden.url = net.ip + ':' + net.port + '/contracts/' + Lamden.contract;
+//		Lamden.url = net.ip + ':' + net.port + '/contracts/' + Lamden.contract;
+		document.getElementById('minimap').src = './map.html?name=' + Lamden.wallet;
 		loadAssets();
 	},
 	sendTx(methodName, args) {
@@ -226,17 +273,36 @@ const Lamden = {
 			//console.log('Get Player Data: ' + e, data, Object.keys(data).length);
 			if (!data.name) {
 				addMessage('Capital not found for player ' + Lamden.wallet); // not an error per se, could be new player
+				let available = Lamden.availableCapitals();
+				let tile = randomArray(available);
+				camera.target.target = mapPosition(tile.x, tile.y);
+				if (!Tiles[tile.x + ',' + tile.y]) {
+					Tiles[tile.x + ',' + tile.y] = {type: 'grass', pos: mapPosition(tile.x, tile.y), x: tile.x, y: tile.y};
+				}
+				UI.x = tile.x;
+				UI.y = tile.y;
+				UI.selectedTile =  UI.x + ',' + UI.y;
+				UI.tileSelect.position = mapPosition(tile.x, tile.y).add(v(0,.09,0));
+				tileHtml(tile.x + ',' + tile.y);
 				return false;
 			}
-			Lamden.Players[Lamden.wallet] = data;
-			addMessage('Capital found at [' + data.x + ',' + data.y + ']');
-			Tiles[data.x + ',' + data.y] = Tiles[data.x + ',' + data.y] || {x: data.x, y: data.y, type: 'plains', pos: mapPosition(data.x, data.y)};
-			Tiles[data.x + ',' + data.y].name = data.name;
-			Tiles[data.x + ',' + data.y].updated = UI.now();
-			Player.capital = true;
+			//Lamden.Players[Lamden.wallet] = data;
+			let tile = Tiles[data.x + ',' + data.y];
+			if (tile.owner == Lamden.wallet && tile.building == 1) {
+				addMessage('Capital found at [' + data.x + ',' + data.y + ']');
+				Player.capital = true;
+				Tiles[data.x + ',' + data.y] = Tiles[data.x + ',' + data.y] || {x: data.x, y: data.y, type: 'plains', pos: mapPosition(data.x, data.y)};
+				tile.name = data.name;
+				tile.updated = UI.now();
+			} else {
+				addMessage('Capital destroyed, resettle', '#f88');
+				Player.capital = false;
+			}
 			$('#actions, #tabs').fadeIn(500);
-			//setBuildingData(Tiles['' + data.x + ',' + data.y], 1, Lamden.wallet);
 			camera.target.position = mapPosition(data.x, data.y);
+			for (let i = 0; i <= 5; i++) {
+				$('#resources').append('<li id="r' + i + '"><img src="icons/' + (World.Resources[i].icon) + '" title="' + World.Resources[i].name + '"><span>' + formatNumber(Player.Resources[i]) + '</span></li>');
+			}
 			for (let i in data.resources) {
 				changePlayerResource(i, data.resources[i]);
 			}
@@ -305,19 +371,60 @@ const Lamden = {
 			Lamden.Players[address] = JSON.parse(e.value);
 		});
 	},
+	capitals: [],
 	getPlayers() {
-		$.get('./players.php', function() {
-
+		$.get('./players.php', function(e) {
+			let data = JSON.parse(e);
+			for (let i in data) {
+				Lamden.Players[data[i].address] = data[i];
+				$('#players').append(`<li data-x="${data[i].x}" data-y="${data[i].y}">${data[i].name} (${formatNumber(data[i].troops)})</li>`);
+				Lamden.capitals.push(data[i].x + ',' + data[i].y);
+			}
+			World.getTileData();
 		});
+	},
+	neighborCapitals(x, y) {
+		let neighbors = [];
+		neighbors.push(v(x - 0, y - 18));
+		neighbors.push(v(x - 18, y - 9));
+		neighbors.push(v(x - 18, y + 9));
+		neighbors.push(v(x - 0, y + 18));
+		neighbors.push(v(x + 18, y + 9));
+		neighbors.push(v(x + 18, y - 9));
+		return neighbors;
+	},
+	availableCapitals() {
+		let available = [];
+		for (var p in Lamden.Players) {
+			let tile = v(Lamden.Players[p].x, Lamden.Players[p].y);
+			let neighbors = this.neighborCapitals(tile.x, tile.y);
+			for (let n in neighbors) {
+				if (this.capitals.indexOf(neighbors[n].x + ',' + neighbors[n].y) == -1) {
+					let tile2 = v(neighbors[n].x , neighbors[n].y);
+					tile2.origin = tile;
+					available.push(tile2);
+				}
+			}
+		}
+		if (!available.length) {
+			available.push(v(0,0));
+		}
+		return available;
 	}
+
 }
-/*
 document.addEventListener('lamdenWalletInfo', Lamden.initWallet);
-window.setTimeout(function() {
-	document.dispatchEvent(new CustomEvent('getLamdenWalletInfo'));
-}, 100);
-*/
+document.addEventListener('lamdenWalletTxStatus', function(e) {
+	console.log(e);
+	return;
+	Lamden.init();
+});
+
 window.addEventListener('load',function() {
+	//$('#loading-screen').hide();
+	//Lamden.getPlayers();
+	document.dispatchEvent(new CustomEvent('lamdenWalletGetInfo'));
+	return;
 	Lamden.wallet = prompt('wallet');
 	if (!Lamden.wallet) {
 		Lamden.wallet = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5);
@@ -366,7 +473,7 @@ function loadAssets() {
 		}
 		//scene.getMeshByName('Base_mesh').scaling.scaleInPlace(.1);
 		//scene.getMeshByName('Soldier_01_mesh').scaling.scaleInPlace(.1);
-		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?31', scene, function(meshes) {
+		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?32', scene, function(meshes) {
 			for (let m in meshes) {
 				meshes[m].position.scaleInPlace(.22);
 				meshes[m].position.y = 1;
@@ -450,7 +557,8 @@ function loadAssets() {
 			//World.assets['Pumpjack'].material = World.assets['Pumpjack'].material.clone();
 			//World.assets['Pumpjack Arm'].material = World.assets['Pumpjack'].material.clone();
 
-			World.loadImage('textures/map2.png');
+			//World.loadImage('textures/map3.png');
+			World.createWorld();
 		});
 	});
 }
@@ -472,6 +580,8 @@ window.setInterval(function() {
 		512 - 100 + tile.x * 2,
 		512 - 100 - tile.y * 2
 	);
-}, 500);
-
+}, 50);
+window.setInterval(function() {
+	//document.getElementById('minimap').contentWindow.location.reload();
+}, 30000);
 </script>

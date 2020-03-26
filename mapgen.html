@@ -1,0 +1,87 @@
+<style>* { margin: 0; padding: 0; } body { transform: scale(2); transform-origin: 0 0; } canvas { transform: scale(1, -1); }</style>
+<body></body>
+<script src="jquery.js"></script>
+<script>
+function clamp(num, min, max) {
+  return num <= min ? min : num >= max ? max : num;
+}
+
+let map = [];
+function calcCoord(x, y) {
+	let x2 = x;
+	let y2 = y;
+	let direction = Math.floor(Math.random() * 4);
+
+	if (direction == 0 && x == mapSize) { direction = 2; }
+	if (direction == 1 && y == mapSize) { direction = 3; }
+	if (direction == 2 && x == 0) { direction = 0; }
+	if (direction == 3 && y == 0) { direction = 1; }
+
+	switch (direction) {
+		case 0: x2 = x + 1; break;
+		case 1: y2 = y + 1; break;
+		case 2: x2 = x - 1; break;
+		case 3: y2 = y - 1; break;
+	}
+	if (map[x2] && map[x2][y2]) {
+		return [x2, y2];
+	}
+	if (!map[x2]) {
+		map[x2] = [];
+	}
+	let current = map[x] && map[x][y] ? map[x][y] : 210;
+	map[x2][y2] = clamp(current + Math.floor(Math.random() * 30) - 15, 0, 255);
+//	map[x2][y2] = clamp(current + (Math.random() < .5 ? -1 : 1), 0, 255);
+//	console.log(map[x2][y2]);
+	return [x2, y2];
+}
+
+var mapSize = 1024;
+var canvas = document.createElement("canvas");
+$('body').append($(canvas).css({width: mapSize + 'px', height: mapSize + 'px', display: 'block'}));
+context = canvas.getContext("2d");
+canvas.width = mapSize;
+canvas.height = mapSize;
+context.fillStyle = 'rgb(0,64,128)';
+context.fillRect(0,0,mapSize,mapSize);
+var imgData = context.getImageData(0, 0, mapSize, mapSize);
+buffer = imgData.data; // writing to buffer is much faster than pixel manipulation
+
+let x = mapSize / 2;
+let y = mapSize / 2;
+let colors = {
+	200: [0,0,0], // rock
+	150: [120,110,50], // desert
+	80: [64,128,53], // plains
+	70: [0,192,0], // forest
+	0: [0, 64, 128], // water
+};
+for (let i = 0; i < mapSize * mapSize * 20; i++) {
+		let next = calcCoord(x,y);
+		x = next[0];
+		y = next[1];
+		let color = map[x][y];
+		let css = '';
+		if (color > 200) {
+			css = 200;
+		} else if (color > 150) {
+			css = 150;
+		} else if (color > 80) {
+			css = 80;
+		} else if (color > 70) {
+			css = 70;
+		} else {
+			css = 0;
+		}
+//		buffer[x * (mapSize * 4) + y * 4 + 0] = colors[css][0];
+//		buffer[x * (mapSize * 4) + y * 4 + 1] = colors[css][1];
+//		buffer[x * (mapSize * 4) + y * 4 + 2] = colors[css][2];
+		buffer[x * (mapSize * 4) + y * 4 + 0] = color;
+		buffer[x * (mapSize * 4) + y * 4 + 1] = color;
+		buffer[x * (mapSize * 4) + y * 4 + 2] = color;
+		buffer[x * (mapSize * 4) + y * 4 + 3] = 255;
+}
+context.putImageData(imgData, 0,0);
+
+
+</script>

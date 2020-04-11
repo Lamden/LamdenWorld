@@ -12,6 +12,13 @@ $defender = $sql->get("SELECT * FROM tiles WHERE x = $x2 AND y = $y2");
 $battle = false;
 $siege = false;
 
+// check if attacker capital alive
+if (!$sql->s("SELECT COUNT(*) FROM players AS p
+	JOIN tiles AS t ON p.x = t.x AND p.y = t.y AND t.building = 1 AND t.owner = CONCAT(p.address, '-', p.session)
+	WHERE p.address = SUBSTR('{$attacker['troopOwner']}', 1, 64)")) {
+	die('{"error": "You\'re defeated, resettle first. "}');
+}
+
 if (!$attacker['troopOwner']) {
 	die('{"error": "Sync error, please refresh the page"}');
 }
@@ -25,20 +32,46 @@ if ($x == $x2 && $y == $y2) {
 // split units
 if ($amount > 0 && $amount < $attacker['numTroops'] && (!$defender['owner'] || $defender['owner'] == $attacker['troopOwner']) && (!$defender['troopOwner'] || $defender['troopOwner'] == $attacker['troopOwner'])) {
 	// merge
-	$sql->q("UPDATE tiles SET numTroops = numTroops - $amount WHERE x = $x AND y = $y");
 	if ($defender['numTroops'] && $defender['troopOwner'] == $attacker['troopOwner']) {
+		$sql->q("UPDATE tiles SET numTroops = numTroops - $amount WHERE x = $x AND y = $y");
 		$sql->q("UPDATE tiles SET numTroops = numTroops + $amount WHERE x = $x2 AND y = $y2");
-	} else if ($defender && !$defender['numTroops']) {
+		$sql->q("INSERT INTO log (type, x, y, x2, y2, var1) VALUES ('move', $x, $y, $x2, $y2, $amount)");
+	} else if ($defender && !$defender['numTroops']) { // move to discovered tile
+		$sql->q("UPDATE tiles SET numTroops = numTroops - $amount WHERE x = $x AND y = $y");
 		$sql->q("UPDATE tiles SET numTroops = $amount, troopOwner = '{$attacker['troopOwner']}' WHERE x = $x2 AND y = $y2");
-	} else if (!$defender) {
-		$sql->q("INSERT INTO tiles (x, y, numTroops, troopOwner) VALUES ($x2, $y2, {$amount}, '{$attacker['troopOwner']}')");
+		$sql->q("INSERT INTO log (type, x, y, x2, y2, var1) VALUES ('move', $x, $y, $x2, $y2, $amount)");
+	} else if (!$defender) { // move to unexplored tile
+		$type = clamp((int)$attacker['type'] + (rand(0,1) == 0 ? -5 : 5), 0, 255);
+		if ($type <= 80) { // water
+			$sql->q("INSERT INTO tiles (type, x, y) VALUES ($type, $x2, $y2)");
+		} else {
+			$sql->q("UPDATE tiles SET numTroops = numTroops - $amount WHERE x = $x AND y = $y");
+			$sql->q("INSERT INTO tiles (x, y, type, numTroops, troopOwner) VALUES ($x2, $y2, $type, {$amount}, '{$attacker['troopOwner']}')");
+//			die('{"error": "Tile not discovered"}');
+		}
+		$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2) VALUES ('move', $x, $y, $x2, $y2, $amount, $type)");
 	}
-	$sql->q("INSERT INTO log (type, x, y, x2, y2, var1) VALUES ('move', $x, $y, $x2, $y2, $amount)");
 	echo '[]';
 	die();
 }
 
 if ($defender) { // existing tile
+	// check if defender capital alive
+	if (($defender['troopOwner'] || $defender['owner']) && !$sql->s("SELECT COUNT(*) FROM players AS p
+		JOIN tiles AS t ON p.x = t.x AND p.y = t.y AND t.building = 1 AND t.owner = CONCAT(p.address, '-', p.session)
+		WHERE t.owner = '" . ($defender['troopOwner'] ? $defender['troopOwner'] : $defender['owner']) . "'")) {
+		if ($defender['numTroops']) {
+			$sql->q("UPDATE tiles SET numTroops = 0, troopOwner = '' WHERE x = $x2 AND y = $y2");
+			$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2) VALUES ('attack', $x, $y, $x2, $y2, {$attacker['numTroops']}, 0)");
+		}
+		if ($defender['hp']) {
+			$sql->q("UPDATE tiles SET hp = 0, building = 0, level = 1, owner = '', fort = 0 WHERE x = $x2 AND y = $y2");
+			$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2, var3) VALUES ('siege', $x, $y, $x2, $y2,{$attacker['numTroops']}, 0, 0)");
+		}
+		//die('Defender defeated');
+		echo '[]';
+		die();
+	}
 	// battle
 	if ($defender['numTroops'] && $defender['troopOwner'] != $attacker['troopOwner']) {
 		$battle = true;
@@ -65,7 +98,8 @@ if ($defender) { // existing tile
 		$siege = true;
 		// reculcalate power
 		$aPower = $attacker['numTroops'] * (hasResearched($attacker['troopOwner'], 5) ? 1.1 : 1) * (hasResearched($defender['troopOwner'], 10) ? .9 : 1);
-		$dPower = 2000 * (hasResearched($defender['troopOwner'], 9) ? 1.3 : 1) * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
+		//$dPower = 2000 * (hasResearched($defender['troopOwner'], 9) ? 1.3 : 1) * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
+		$dPower = $defender['fort'];
 /*		if (2000 > $attacker['numTroops']) { // defender stronger
 			//$attack = $attacker['numTroops'];
 			$attacker['numTroops'] -= $attacker['numTroops'] > 2000 ? 2000 : $attacker['numTroops'];
@@ -74,7 +108,7 @@ if ($defender) { // existing tile
 			$attacker['numTroops'] -= 2000;
 			$defender['fort'] = 0;
 		}*/
-		$defender['fort'] = clamp($defender['fort'] - $aPower, 0, $defender['fort']);
+		$defender['fort'] = clamp($defender['fort'] - ($aPower / 2), 0, $defender['fort']);
 		$attacker['numTroops'] = clamp($attacker['numTroops'] - $dPower, 0, $attacker['numTroops']);
 	}
 	// building
@@ -84,7 +118,10 @@ if ($defender) { // existing tile
 	}
 	if ($defender['hp'] && $defender['owner'] != $attacker['troopOwner']) {
 		$aPower = $attacker['numTroops'] * (hasResearched($attacker['troopOwner'], 5) ? 1.1 : 1) * (hasResearched($defender['troopOwner'], 10) ? .9 : 1);
-		$dPower = ($defender['building'] == 2 ? 2000 : 100) * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
+		$dPower = ($defender['hp'] == 1 ? 0 : 100) * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
+		if ($defender['building'] == 1) {
+			$dPower = $defender['hp'];
+		}
 /*		if ($defender['hp'] > $attacker['numTroops']) { // defender stronger
 			$attacker['numTroops'] -= $attacker['numTroops'] > 100 ? 100 : $attacker['numTroops'];
 			$defender['hp'] -= $attacker['numTroops'];
@@ -118,7 +155,7 @@ if ($defender) { // existing tile
 	if ($type <= 80) { // water
 		$sql->q("INSERT INTO tiles (type, x, y) VALUES ($type, $x2, $y2)");
 	} else {
-	$sql->q("UPDATE tiles SET numTroops = 0, troopOwner = '' WHERE x = $x AND y = $y");
+		$sql->q("UPDATE tiles SET numTroops = 0, troopOwner = '' WHERE x = $x AND y = $y");
 		$sql->q("INSERT INTO tiles (type, x, y, numTroops, troopOwner) VALUES ($type, $x2, $y2, {$attacker['numTroops']}, '{$attacker['troopOwner']}')");
 	}
 	$sql->q("INSERT INTO log (type, x, y, x2, y2, var2) VALUES ('move', $x, $y, $x2, $y2, $type)");

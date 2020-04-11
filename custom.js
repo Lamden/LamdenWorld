@@ -22,7 +22,7 @@ custom = {
 		return Math.ceil(value);
 	},
 	attackDistance() {
-		return 3 + (techHasResearched(8) ? 1 : 0);
+		return 1; // 3 + (techHasResearched(8) ? 1 : 0);
 	},
 
 	// cost to place fortifications on a tile
@@ -47,13 +47,22 @@ custom = {
 		return hp;
 	},
 
+	buildCost(baseCost, have) {
+		have = have || 0;
+		let cost = {};
+		for (let c in baseCost) {
+			//cost[c] = baseCost[c] * Math.pow(2, level - 1);
+			cost[c] = Math.round(baseCost[c] * Math.pow(1.15, have));
+		}
+		return cost;
+	},
 	// takes the base cost to build a building, returns the cost to level said building up to level <level>
 	// level 1 should return base cost
 	levelUpCost(baseCost, level) {
 		let cost = {};
 		for (let c in baseCost) {
 			//cost[c] = baseCost[c] * Math.pow(2, level - 1);
-			cost[c] = baseCost[c] * level;
+			cost[c] = Math.round(baseCost[c] * (.5) * ((level + 1) * .5));
 		}
 		return cost;
 	},
@@ -91,10 +100,16 @@ custom = {
 
 	// capacity for a mine/oilwell
 	mineCapacity(tile) {
-		let base = tile.level * 1000 * (techHasResearched(20) ? 2 : 1);
+		let base = tile.level * 600 * (techHasResearched(20) ? 2 : 1);
 		if ([1,7].indexOf(tile.building) > -1 && techHasResearched(21)) {
 			base *= 2;
 		}
+		return base;
+	},
+
+	// storage capacity for a mine/oilwell
+	mineStorage(tile) {
+		let base = tile.level * 10000;
 		return base;
 	},
 
@@ -117,8 +132,6 @@ custom = {
 	calcYield(tile) {
 		let now = UI.now();
 		//let lastHarvest = tile.lastHarvest || now;
-		console.log(tile);
-		console.log(tile.building);
 		let resource = World.buildingData[tile.building].produces;
 		if (resource === undefined) {
 			console.log(tile, resource);

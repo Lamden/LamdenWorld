@@ -9,7 +9,7 @@ if ($num == 0 || $num < 0) {
 	die('{"error": "No troops deployed"}');
 }
 //$sql->q("UPDATE tiles SET numTroops = numTroops + $num, troopOwner = owner, trainAmount = 0, collected = 1 WHERE x = $x AND y = $y");
-$cost = array(4 => $num);
+$cost = array(0 => $num, 4 => $num);
 if (!deductCost($owner, $cost)) {
 	die('{"error": "Not enough resources"}');
 }

@@ -1,8 +1,9 @@
 <?
 require('lite.php');
-$owner = $request->get('owner', 64);
+$owner = $request->get('owner', 72);
 $id = $request->get('id');
 $amount = $request->get('amount');
+
 if ($sql->s("SELECT COUNT(*) FROM resources WHERE owner = '$owner' AND resource = $id")) {
 	$sql->q("UPDATE resources SET amount = amount + $amount, lastHarvest = UNIX_TIMESTAMP() WHERE owner = '$owner' AND resource = $id");
 } else {

@@ -275,7 +275,7 @@ function getScreenCoords(position) {
 	var transformMatrix = scene.getTransformMatrix();
 	var viewport = scene.activeCamera.viewport;
 	var c = BABYLON.Vector3.Project(position, worldMatrix, transformMatrix, viewport);
-	return {x: c.x * canvas.width / window.devicePixelRatio, y: c.y * canvas.height / window.devicePixelRatio, z: c.z};
+	return v(c.x * canvas.width / window.devicePixelRatio, c.y * canvas.height / window.devicePixelRatio, c.z);
 }
 
 // polygon  functions
@@ -548,7 +548,7 @@ function updateSPSMeshes() {
 		modelSPS[id].mesh.freezeWorldMatrix();
 		var t1 = performance.now();
 //		console.trace();
-		console.log(id + ' : ' + (t1 - t0));
+//		console.log(id + ' : ' + (t1 - t0));
 	}
 	updateSPS = {};
 }

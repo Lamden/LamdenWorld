@@ -22,14 +22,16 @@ html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-s
 	border-image: url(images/border.png) 8; background: url(images/bg.jpg);
 	box-sizing: border-box; box-shadow: inset 0 0 10px #000, inset 0 0 10px #000, inset 0 0 10px #000; }
 
-#resources { width: 150px; left: 0; top: 0; height: 300px; background: padding: 5px;
-	background-image: url(images/bg2.jpg); box-shadow: inset 0 0 3px #000; }
-#resources li { float: left; width: 48px; height:48px; display: block; position: relative; margin: 5px; }
+#resources { width: 150px; left: 0; top: 0; height: 350px; padding: 5px;
+	box-shadow: inset 0 0 3px #000; }
+#resources li { height:48px; display: block; position: relative; margin: 5px; }
 #resources img { width: 48px; height: 48px; cursor: pointer; }
-#resources span { position: absolute; bottom: 0 ; right: 0;
-	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
+#resources * { text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
+#resources span { position: absolute; bottom: 0 ; left: 0; width: 48px; text-align: center;	}
+#resources b { position: absolute; top: 0 ; left: 50px; }
+#resources i { position: absolute; top: 20px; left: 50px; }
 
-#players { width: 150px; left: 0; top: 300px; bottom: 200px; height: auto; padding: 5px;
+#players { width: 150px; left: 0; top: 350px; bottom: 200px; height: auto; padding: 5px;
 	box-shadow: inset 0 0 3px #000; }
 #players li { padding: 5px; }
 #players li:hover { color: #8cf; cursor: pointer; }
@@ -91,7 +93,7 @@ button:hover { background-color: #935; }
 #colonize-button { position: fixed; bottom: 5px; right: 5px; width: 128px; height: 128px; cursor: pointer; }
 #unit-amount { position: fixed; bottom: 85px; right: 100px; width: 72px; }
 #deploy-button { position: fixed; bottom: 55px; right: 5px; width: 72px; height: 72px; cursor: pointer; }
-#defense-button { position: fixed; bottom: 5px; right: 80px; width: 72px; height: 72px; cursor: pointer; }
+#fortify-button { position: fixed; bottom: 5px; right: 80px; width: 72px; height: 72px; cursor: pointer; }
 
 #tabs li { display: block; cursor: pointer; margin-left: -0px; }
 #tabs li img { width: 52px; height: 52px; }
@@ -141,16 +143,16 @@ button:hover { background-color: #935; }
 </ul>
 <section id="chat-panel">
 	<ul id="all"><li>Welcome to <img src="images/lamden.svg" style="width: 15px; height: 15px; "> LamdenWorld v0.11</li></ul>
-	<ul id="chat"></ul>
+	<ul id="chat" style="display: none; "></ul>
 	<ul id="log" style="display: none; "></ul>
 <form>
 <input type="text" name="body" autocomplete="off" placeholder="Say something...">
 </form></section>
 <section id="actions"></section>
 <section id="tabs">
-<input type="text" id="unit-amount" value="100">
+<input type="text" id="unit-amount" value="10">
 <img id="deploy-button" src="icons/crosshair.png" title="Deploy Troops to territory">
-<img id="defense-button" src="icons/shield.png" title="Deploy Defense to territory">
+<img id="fortify-button" src="icons/shield.png" title="Deploy Defense to territory">
 <ul>
 	<!--<li data-tab="build"><img src="icons/house.png" title="Build Tab"></li>-->
 	<!--<li data-tab="attack"><img src="icons/missile.png"></li>-->
@@ -211,16 +213,18 @@ const Lamden = {
 	Players: {},
 	initWallet(e) {
 		lamdenInfo = e.detail;
-		console.log(lamdenInfo);
+		//console.log(lamdenInfo);
 		if (lamdenInfo.errors) {
+			//console.error(lamdenInfo.errors);
 			addMessage(lamdenInfo.errors[0]);
 			const detail = JSON.stringify({
 				appName: 'LamdenWorld',
 				description: 'RTS game under development. RTS Game under development. RTS Game under development. ',
-				logo: './',
+				logo: '/lamden/icons/generic.png',
 				contractName: 'con_lw',
 				networkType: 'testnet',
-				//reapprove: true,
+				newKeypair: true,
+				reapprove: true,
 			})
 
 			document.dispatchEvent(new CustomEvent('lamdenWalletConnect', {detail}));
@@ -245,11 +249,10 @@ const Lamden = {
 			addMessage('No primary wallet found in your Lamden account', '#f88');
 			return false;
 		}
-		Lamden.wallet = lamdenInfo.wallets[0];
-		Lamden.wallet = prompt('wallet');
-		addMessage('Using wallet ' + Lamden.wallet.substr(0,16) + '...', '#8cf');
+		Lamden.account = lamdenInfo.wallets[0];
+		//Lamden.wallet = prompt('wallet');
+		addMessage('Using wallet ' + Lamden.account.substr(0,16) + '...', '#8cf');
 //		Lamden.url = net.ip + ':' + net.port + '/contracts/' + Lamden.contract;
-		document.getElementById('minimap').src = './map.html?name=' + Lamden.wallet;
 		loadAssets();
 	},
 	sendTx(methodName, args) {
@@ -264,15 +267,15 @@ const Lamden = {
 		document.dispatchEvent(new CustomEvent('signTx', {detail}));
 	},
 	getCapital() {
-		if (!Lamden.wallet) {
+		if (!Lamden.account) {
 			return false;
 		}
-		$.get('./player.php?owner=' + Lamden.wallet, function(e) {
-			console.log(e);
+		$.get('./player.php?owner=' + Lamden.account, function(e) {
 			data = JSON.parse(e);
+			//console.log(data);
 			//console.log('Get Player Data: ' + e, data, Object.keys(data).length);
 			if (!data.name) {
-				addMessage('Capital not found for player ' + Lamden.wallet); // not an error per se, could be new player
+				addMessage('Capital not found for player ' + formatName(Lamden.account) + ', choose settle location');
 				let available = Lamden.availableCapitals();
 				let tile = randomArray(available);
 				camera.target.target = mapPosition(tile.x, tile.y);
@@ -286,6 +289,7 @@ const Lamden = {
 				tileHtml(tile.x + ',' + tile.y);
 				return false;
 			}
+			Lamden.wallet = data.address + '-' + data.session;
 			//Lamden.Players[Lamden.wallet] = data;
 			let tile = Tiles[data.x + ',' + data.y];
 			if (tile.owner == Lamden.wallet && tile.building == 1) {
@@ -297,11 +301,15 @@ const Lamden = {
 			} else {
 				addMessage('Capital destroyed, resettle', '#f88');
 				Player.capital = false;
+				Lamden.wallet = '';
+				switchUnitDisplay();
+				World.drawWorld(true);
 			}
 			$('#actions, #tabs').fadeIn(500);
 			camera.target.position = mapPosition(data.x, data.y);
+			document.getElementById('minimap').src = './map.html?name=' + Lamden.wallet + '&' + Math.random();
 			for (let i = 0; i <= 5; i++) {
-				$('#resources').append('<li id="r' + i + '"><img src="icons/' + (World.Resources[i].icon) + '" title="' + World.Resources[i].name + '"><span>' + formatNumber(Player.Resources[i]) + '</span></li>');
+				$('#resources').append('<li id="r' + i + '"><img src="icons/' + (World.Resources[i].icon) + '" title="' + World.Resources[i].name + '"><span>' + formatNumber(Player.Resources[i]) + '</span><b>' + World.Resources[i].name + '</b><i></i></li>');
 			}
 			for (let i in data.resources) {
 				changePlayerResource(i, data.resources[i]);
@@ -318,6 +326,8 @@ const Lamden = {
 			window.setInterval(function() {
 				Lamden.updatePlayer();
 			}, 10000);
+		}).fail(function(e) {
+			console.error(e);
 		});
 		return;
 		$.get(Lamden.url + '/players?key=' + Lamden.wallet, function(e) {
@@ -343,6 +353,14 @@ const Lamden = {
 		$.get('./player.php?owner=' + Lamden.wallet, function(e) {
 			data = JSON.parse(e);
 			//console.log('Get Player Data: ', data);
+			if (!data.address) {
+				Player.capital = false;
+				addMessage('Your capital has been destroyed, resettle first.', '#f88');
+				for (var i in Player.Resources) {
+					changePlayerResource(i, -Player.Resources[i]);
+				}
+				return;
+			}
 			for (var i in data.resources) {
 				if (data.resources[i] - (Player.Resources[i] || 0) != 0) {
 					changePlayerResource(i, data.resources[i] - (Player.Resources[i] || 0));
@@ -376,7 +394,7 @@ const Lamden = {
 		$.get('./players.php', function(e) {
 			let data = JSON.parse(e);
 			for (let i in data) {
-				Lamden.Players[data[i].address] = data[i];
+				Lamden.Players[data[i].address + '-' + data[i].session] = data[i];
 				$('#players').append(`<li data-x="${data[i].x}" data-y="${data[i].y}">${data[i].name} (${formatNumber(data[i].troops)})</li>`);
 				Lamden.capitals.push(data[i].x + ',' + data[i].y);
 			}
@@ -395,11 +413,15 @@ const Lamden = {
 	},
 	availableCapitals() {
 		let available = [];
+		if (!Object.keys(Lamden.Players).length) {
+			Lamden.Players[0] = v(0,0);
+		}
 		for (var p in Lamden.Players) {
 			let tile = v(Lamden.Players[p].x, Lamden.Players[p].y);
 			let neighbors = this.neighborCapitals(tile.x, tile.y);
 			for (let n in neighbors) {
-				if (this.capitals.indexOf(neighbors[n].x + ',' + neighbors[n].y) == -1) {
+				let id = neighbors[n].x + ',' + neighbors[n].y;
+				if (this.capitals.indexOf(id) == -1 && (!Tiles[id] || !Tiles[id].owner)) {
 					let tile2 = v(neighbors[n].x , neighbors[n].y);
 					tile2.origin = tile;
 					available.push(tile2);
@@ -422,7 +444,9 @@ document.addEventListener('lamdenWalletTxStatus', function(e) {
 
 window.addEventListener('load',function() {
 	//$('#loading-screen').hide();
+	//return;
 	//Lamden.getPlayers();
+	addMessage('Waiting for Lamden Wallet... if nothing happens please install Lamden Wallet https://github.com/Lamden/wallet');
 	document.dispatchEvent(new CustomEvent('lamdenWalletGetInfo'));
 	return;
 	Lamden.wallet = prompt('wallet');
@@ -471,6 +495,11 @@ function loadAssets() {
 			World.assets[meshes[m].name] = meshes[m];
 			scene.meshes.splice(scene.meshes.indexOf(meshes[m]), 1);
 		}
+		World.assets['Base_mesh'].setVerticesData('color', new Array(3312).fill(1));
+		World.assets['Soldier_01_mesh'].friendly = World.assets['Soldier_01_mesh'].material.clone('Friendly Character');
+		World.assets['Soldier_01_mesh'].friendly.diffuseTexture = new BABYLON.Texture('data/character_friendly.jpg', scene);
+		World.assets['Soldier_01_mesh'].enemy = World.assets['Soldier_01_mesh'].material.clone('Enemy Character');
+		World.assets['Soldier_01_mesh'].enemy.diffuseTexture = new BABYLON.Texture('data/character_enemy.jpg', scene);
 		//scene.getMeshByName('Base_mesh').scaling.scaleInPlace(.1);
 		//scene.getMeshByName('Soldier_01_mesh').scaling.scaleInPlace(.1);
 		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?32', scene, function(meshes) {

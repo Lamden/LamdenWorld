@@ -5,7 +5,9 @@
 <script>
 
 // src
-var onMapload = function (img) {
+//var onMapload = function (img) {
+function parse() {
+/*
 	// create canvas
 	var canvas = document.createElement("canvas");
 	canvas.id='test';
@@ -16,17 +18,20 @@ var onMapload = function (img) {
 		0,0,512,512,
 		0,0,512,512
 	);
-
+*/
 	var canvas2 = document.createElement("canvas");
 	$('body').append($(canvas2).css({width: '512px', height: '512px', display: 'block'}));
-	context2 = canvas2.getContext("2d");
+	context2 = canvas2.getContext('2d');
 	canvas2.width = 512;
 	canvas2.height = 512;
-	context2.fillStyle = '#048';
+	//context2.fillStyle = '#048';
+	context2.fillStyle = '#888';
 	context2.fillRect(0,0,512,512);
-	var imgData = context.getImageData(0, 0, 512, 512);
+	var imgData = context2.getImageData(0, 0, 512, 512);
 	buffer = imgData.data;
 	// redraw map in sensible colors
+
+/*
 	for (var i = 0; i < 512 * 512 * 4; i += 4) {
 		var r = buffer[i + 0];
 		var g = buffer[i + 1];
@@ -53,16 +58,24 @@ var onMapload = function (img) {
 			buffer[i + 2] = 64;
 		}
 	}
+*/
 //	console.log(buffer);
+	for (let t in Tiles) {
+   		//context2.fillStyle = Tiles[t].owner == name ? '#fff' : 'red';
+		//context2.fillRect(Tiles[t].x, Tiles[t].y, 1, 1);
+		let x = Tiles[t].x;
+		let y = Tiles[t].y;
+		buffer[(x * 512 + y) * 4] = Tiles[t].terrain ? 255 : 0;
+	}
 	context2.putImageData(imgData, 0,0);
+	return;
 	for (let t in Tiles) {
 		//context2.moveTo(Players[p].x, Players[p].y);
-    	//context2.arc(Players[p].x, Players[p].y, 1, 0, 2 * Math.PI, false);
-    	//context2.fill();
+		//context2.arc(Players[p].x, Players[p].y, 1, 0, 2 * Math.PI, false);
+		//context2.fill();
    		context2.fillStyle = Tiles[t].owner == name ? '#fff' : 'red';
-    	context2.fillRect(Tiles[t].x, Tiles[t].y, 1, 1);
+		context2.fillRect(Tiles[t].x, Tiles[t].y, 1, 1);
 	}
-	return;
 };
 urlParams = new URLSearchParams(window.location.search);
 name = urlParams.get('name');
@@ -71,14 +84,63 @@ Tiles = {};
 $.get('./gettiles.php', function(e) {
 	//console.log(e);
 	let data = JSON.parse(e);
-	for (let i in data) {
+/*	for (let i in data) {
 		if (data[i].building) {
 			data[i].x += 256;
 			data[i].y += 256;
 			Tiles[data[i].x + ',' + data[i].y] = data[i];
 		}
+	}*/
+	//BABYLON.Tools.LoadImage('textures/map3.png', onMapload);
+	//parse();
+
+	var canvas2 = document.createElement("canvas");
+	$('body').append($(canvas2).css({width: '512px', height: '512px', display: 'block'}));
+	context2 = canvas2.getContext('2d');
+	canvas2.width = 512;
+	canvas2.height = 512;
+	//context2.fillStyle = '#048';
+	context2.fillStyle = '#888';
+	context2.fillRect(0,0,512,512);
+	var imgData = context2.getImageData(0, 0, 512, 512);
+	let buffer = imgData.data;
+
+	for (let i in data) {
+		let x = data[i].x - 256;
+		let y = data[i].y + 256;
+		let r = data[i].type;
+		let c = (y * 512 + x) * 4;
+		if (data[i].building && data[i].owner != name) {
+			buffer[c + 0] = 255;
+			buffer[c + 1] = 0;
+			buffer[c + 2] = 0;
+		} else if (data[i].building && data[i].owner == name) {
+			buffer[c + 0] = 255;
+			buffer[c + 1] = 255;
+			buffer[c + 2] = 255;
+		} else if (r < 80) { // sea
+			buffer[c + 0] = 0;
+			buffer[c + 1] = 64;
+			buffer[c + 2] = 128;
+		} else if (r > 240 && r < 250) { // rock
+			buffer[c + 0] = 0;
+			buffer[c + 1] = 0;
+			buffer[c + 2] = 0;
+		} else if (r > 210 || (r > 120 && r < 150)) { // desert
+			buffer[c + 0] = 120;
+			buffer[c + 1] = 110;
+			buffer[c + 2] = 50;
+		} else if (r < 90 || (r > 150 && r < 155)) { // tree
+			buffer[c + 0] = 0;
+			buffer[c + 1] = 192;
+			buffer[c + 2] = 0;
+		} else { // soil
+			buffer[c + 0] = 64;
+			buffer[c + 1] = 128;
+			buffer[c + 2] = 64;
+		}
 	}
-	BABYLON.Tools.LoadImage('textures/map3.png', onMapload);
+	context2.putImageData(imgData, 0,0);
 });
 
 

@@ -1,4 +1,5 @@
 <?
+die(); // disabled
 require('lite.php');
 $x = $request->get('x');
 $y = $request->get('y');

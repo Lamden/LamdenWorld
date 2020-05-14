@@ -2,7 +2,8 @@ custom = {
 	// how many units can fit on <tile> depending on research and if a fort is present
 	// only accurate for active player
 	maxOccupancy(tile) {
-		let value = 5000;
+		return 250;
+		let value = 100; // 5000;
 		if (techHasResearched(7)) {
 			value += 2000;
 		}
@@ -13,6 +14,9 @@ custom = {
 			value += (tile.level * 1000);
 		}
 		return value;
+	},
+	maxFort() {
+		return 550;
 	},
 
 	// calculates move distance for #units
@@ -48,6 +52,7 @@ custom = {
 	},
 
 	buildCost(baseCost, have) {
+		return baseCost;
 		have = have || 0;
 		let cost = {};
 		for (let c in baseCost) {
@@ -90,7 +95,7 @@ custom = {
 
 	// the cost multiplier for each unit
 	trainCostMultiplier(tile) {
-		return Math.round(clamp(1 - Math.sqrt(tile.level) / 20, .4, 1) * 100) / 100;
+		return 1; // Math.round(clamp(1 - Math.sqrt(tile.level) / 20, .4, 1) * 100) / 100;
 	},
 
 	// returns cost to train barracks to capacity
@@ -100,6 +105,7 @@ custom = {
 
 	// capacity for a mine/oilwell
 	mineCapacity(tile) {
+		return 1500;
 		let base = tile.level * 600 * (techHasResearched(20) ? 2 : 1);
 		if ([1,7].indexOf(tile.building) > -1 && techHasResearched(21)) {
 			base *= 2;
@@ -109,22 +115,17 @@ custom = {
 
 	// storage capacity for a mine/oilwell
 	mineStorage(tile) {
+		return 1500;
 		let base = tile.level * 10000;
 		return base;
 	},
 
 	// yield speed
 	yieldMultiplier(tile) {
-		let resource = World.buildingData[tile.building].produces
-		let tileMultiplier = World.tileTypes[tile.type].yield[resource];
+		let resource = World.buildingData[tile.building].produces;
+		let tileMultiplier = (2/60); // World.tileTypes[tile.type].yield[resource];
 		let buildingMultiplier = World.buildingData[tile.building].productionSpeed;
-		let speed = tile.level * tileMultiplier * buildingMultiplier;
-		if (techHasResearched(12)) {
-			speed *= 1.1;
-		}
-		if ([1,7].indexOf(tile.building) > -1 && techHasResearched(21)) {
-			speed *= 2;
-		}
+		let speed = tileMultiplier * buildingMultiplier;
 		return speed;
 	},
 

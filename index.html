@@ -16,25 +16,40 @@ html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-s
 #unit-count { position: fixed; left: 50%; background: #000; width: 80px; height: 50px; text-align: center;
 	font-size: 150%; top: 0; margin-left: -40px; }
 #unit-count:after { position: fixed; top: 30px; left: 50%; margin-left: -40px; width: 80px; background: #000;
-	font-size: 60%; content: "units"; }
+	font-size: 60%; content: "tiles"; }
 
-#resources, #players, #actions, #minimap, #chat-panel, #tabs, #info-panel, #chat-tabs li { position: fixed; border: 6px solid transparent;
+#resources, #players, #actions, #minimap, #chat-panel, #info-panel, #chat-tabs li, #resources li div { position: fixed; border: 6px solid transparent;
 	border-image: url(images/border.png) 8; background: url(images/bg.jpg);
 	box-sizing: border-box; box-shadow: inset 0 0 10px #000, inset 0 0 10px #000, inset 0 0 10px #000; }
 
-#resources { width: 150px; left: 0; top: 0; height: 350px; padding: 5px;
+#resources { bottom: 0px; left: 600px; right: 0px; padding: 0 10px; width: auto; height: 200px;
 	box-shadow: inset 0 0 3px #000; }
-#resources li { height:48px; display: block; position: relative; margin: 5px; }
-#resources img { width: 48px; height: 48px; cursor: pointer; }
+#resources ul { display: flex; flex-direction: column; flex-wrap: wrap; height: 200px; margin-right: 160px; }
+#resources li { width: 50%; height: 35px; display: block; position: relative; margin: 5px 50px 5px 0; text-align: center;}
+#resources li:nth-last-child(-n+2) { height: 82px; min-width: 330px; }
+#resources img { width: 38px; height: 38px; cursor: pointer; float: left; }
 #resources * { text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
-#resources span { position: absolute; bottom: 0 ; left: 0; width: 48px; text-align: center;	}
-#resources b { position: absolute; top: 0 ; left: 50px; }
-#resources i { position: absolute; top: 20px; left: 50px; }
+#resources .own { position: absolute; top: 11px; right: 10px; text-align: center; display: block;	}
+#resources .cap { position: absolute; top: 11px; left: 100%; text-align: center; display: block; margin-left: 5px; color: #aaa; }
+#resources li div { position: relative; margin-left: 50px; height: 20px; margin-top: 6px; background: linear-gradient(#aaa, #222); border-width: 3px;
+	box-sizing: content-box; }
+#resources div * { display: block; height: 20px; box-shadow: inset 0 0 3px #000; transition: width 1s, left 1s; position: absolute; }
+#resources div span { display: inline; position: static; height: auto; }
+#resources div s { background: linear-gradient(#683, #231); text-decoration: none; }
+#resources div b { background: linear-gradient(#ce6, #462); }
+#resources div i { background: linear-gradient(#ffc, #a98); opacity: .5; }
+#resources #harvest-all { height: 64px; width: 64px; margin-top: 60px; }
 
-#players { width: 150px; left: 0; top: 350px; bottom: 200px; height: auto; padding: 5px;
-	box-shadow: inset 0 0 3px #000; }
+#players { width: 180px; left: 0; top: 490px; bottom: 200px; height: auto; padding: 5px;
+	box-shadow: inset 0 0 3px #000; overflow-y: scroll; }
 #players li { padding: 5px; }
 #players li:hover { color: #8cf; cursor: pointer; }
+
+
+::-webkit-scrollbar {  width: 8px; border-radius: 8px; }
+::-webkit-scrollbar-track {  background: transparent;}
+::-webkit-scrollbar-thumb { background: #e6e6e6; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #c5c5c5; }
 
 #marketplace { position: fixed; width: 500px; padding: 10px; top: 100px; left: 100px; background: rgba(0,0,0,.6);
 	display: none; }
@@ -42,10 +57,11 @@ html, body { height: 100%; margin: 0; background: #000; overflow: hidden; font-s
 th, td { text-align: left; padding: 3px; }
 table .num { text-align: right; }
 
-#info-panel { position: fixed; width: 300px; padding: 10px; top: 0px; right: 0px; bottom: 140px; height: auto;
+#info-panel { position: fixed; width: 300px; padding: 10px; top: 0px; right: 0px; bottom: 200px; height: auto;
 	display: none; box-sizing: content-box; overflow-y: auto; }
-h2 { margin-top: 10px; }
+h2 { margin-top: 10px; margin-left: 5px; }
 #info-panel progress { width: 300px; }
+#info-pane h2 { margin-top: 20px; }
 #info-panel p { padding: 5px; }
 #info-panel li {  display: block; font-size: 80%; }
 #info-panel b { display: block; font-size: 120%; }
@@ -60,11 +76,14 @@ input[type=text] { width: 100px; }
 button { color: #000; padding: 0px 20px; background: url(images/button2.png); background-size: cover; line-height: 30px;
 	width: 150px; border: none; color: #fff; cursor: pointer; margin-left: 75px; font-size: 115%; margin-top: 15px;
 	text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
+input+button { margin-left: 5px; }
 button:hover { background-color: #935; }
-#demolish-button { position: absolute; bottom: 10px; left: 30px; }
+/* #demolish-button { position: absolute; bottom: 10px; left: 30px; } */
 
-#info-panel dt { float: left; padding: 5px; }
-#info-panel dd { text-align: right; padding: 5px; border-bottom: 1px solid #888; }
+#info-panel dl { display: flex; flex-wrap: wrap; }
+#info-panel dt { width: 60%; padding: 0 5px; box-sizing: border-box; }
+#info-panel dd { text-align: right; padding-top: 10px; width: 40%; box-sizing: border-box; }
+#info-panel dl img { margin-bottom: -10px; }
 
 #minimap { position: fixed; bottom: 0px; left: 0px; width: 200px; height: 200px; background: rgba(128,128,128,1); }
 #chat-tabs { position: fixed; bottom: 192px; left: 220px; }
@@ -80,25 +99,31 @@ button:hover { background-color: #935; }
 #chat-panel form { position: fixed; bottom: 0; margin: -5px; }
 #chat-panel input { width: 400px; text-align: left; }
 
-#actions { position: fixed; bottom: 0px; left: 600px; right: 200px; padding: 10px; width: auto; height: 140px; display: none;
+#actions { width: 180px; left: 0; top: 0; height: 490px; padding: 5px; display: none;
 	background-image: url(images/bg2.jpg); box-shadow: inset 0 0 3px #000; }
-#actions li { display: block; float: left; width: 64px; height: 64px; margin-left: -32px; margin-top: -8px; margin-right: -5px; }
-#actions li:first-child { margin-left: 0; }
-#actions li:nth-child(even) { margin-top: 38px; }
-#actions img { width: 64px; height: 64px; cursor: pointer; filter: drop-shadow(2px 2px 5px rgba(0,0,0,.5)); }
+#actions h2 { text-align: center; }
+#actions li { display: block; height: 64px; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 2px 2px 5px #000; }
+#actions li.disabled { opacity: .5; }
+#actions b { display: block; padding-top: 10px; }
+#actions img { width: 64px; height: 64px; cursor: pointer; filter: drop-shadow(2px 2px 5px rgba(0,0,0,.5)); float: left; }
 #actions img:hover { position: relative; top: -1px; left: -1px; filter: drop-shadow(3px 3px 5px #000); }
+/*
 #tabs { bottom: 0px; right: 0px; padding: 10px; width: 200px; height: 140px; background-image: url(images/bg2.jpg);
 	box-shadow: inset 0 0 3px #000; display: none; }
+*/
+#resources input { border-width: 3px; }
+#buy-unit-amount, #buy-fort-amount { position: absolute; top: 45px; left: 50px; width: 50px; margin: 0; }
+#buy-unit-button, #buy-fort-button { position: absolute; top: 45px; left: 115px; width: 70px; margin: 0; background-size: 100% 100%; height: 30px; font-size: 1em; padding: 0 10px; }
+#unit-amount, #defense-amount { position: absolute; top: 45px; left: 200px; width: 50px; margin: 0; }
+#deploy-button, #fortify-button { position: absolute; top: 45px; margin: 0; left: 260px; width: 70px; margin: 0; background-size: 100% 100%; height: 30px; font-size: 1em; padding: 0 10px; }
 
-#colonize-button { position: fixed; bottom: 5px; right: 5px; width: 128px; height: 128px; cursor: pointer; }
-#unit-amount { position: fixed; bottom: 85px; right: 100px; width: 72px; }
-#deploy-button { position: fixed; bottom: 55px; right: 5px; width: 72px; height: 72px; cursor: pointer; }
-#fortify-button { position: fixed; bottom: 5px; right: 80px; width: 72px; height: 72px; cursor: pointer; }
-
+/*
 #tabs li { display: block; cursor: pointer; margin-left: -0px; }
 #tabs li img { width: 52px; height: 52px; }
-
+*/
 #tooltip { position: fixed; min-width: 100px; max-width: 300px; padding: 10px; background: rgba(0,0,0,.6); pointer-events: none; }
+#tooltip dl { display: flex; flex-wrap: wrap; }
+#tooltip dt, #tooltip dd { display: block; width: 50%; }
 
 #settings { position: fixed; top: 50%; left: 50%; width: 600px; height: 400px; margin-left: -300px; margin-top: -200px;
 	background: rgba(0,0,0,.6); padding: 10px; display: none; }
@@ -114,8 +139,15 @@ button:hover { background-color: #935; }
 <body>
 <canvas id="renderCanvas"></canvas>
 <section id="labels"></section>
-<ul id="resources"></ul>
-<ul id="players"></ul>
+<section id="resources">
+<img id="harvest-all" src="icons/harvest.png">
+<ul></ul>
+<!--	<input type="text" id="unit-amount" value="10">
+	<button id="deploy-button" title="Deploy Troops to territory">Place</button>
+	<input type="text" id="defense-amount" value="10">
+	<button id="fortify-button" title="Deploy Defense to territory">Place</button> -->
+</section>
+<div id="players"><h2>World Leaders</h2><ul></ul></div>
 <section id="info-bar">
 	<p id="unit-count">0</p>
 </section>
@@ -149,6 +181,7 @@ button:hover { background-color: #935; }
 <input type="text" name="body" autocomplete="off" placeholder="Say something...">
 </form></section>
 <section id="actions"></section>
+<!--
 <section id="tabs">
 <input type="text" id="unit-amount" value="10">
 <img id="deploy-button" src="icons/crosshair.png" title="Deploy Troops to territory">
@@ -158,6 +191,7 @@ button:hover { background-color: #935; }
 	<!--<li data-tab="attack"><img src="icons/missile.png"></li>-->
 	<!--<li data-tab="defense"><img src="icons/shield.png" title="Defense Tab"></li>-->
 </ul></section>
+-->
 <section id="tooltip"></section>
 <section id="settings">
 <h2>Settings</h2>
@@ -179,9 +213,9 @@ button:hover { background-color: #935; }
 <script src="core.js"></script>
 <script src="blendMaterial.js"></script>
 <script src="watermaterial.js"></script>
-<script src="world.js?3"></script>
-<script src="ui.js?4"></script>
-<script src="custom.js?2"></script>
+<script src="world.js?5"></script>
+<script src="ui.js?7"></script>
+<script src="custom.js?3"></script>
 <script>
 camera.lowerBetaLimit = .1;
 camera.upperBetaLimit = Math.PI * .4;
@@ -221,6 +255,7 @@ const Lamden = {
 				appName: 'LamdenWorld',
 				description: 'RTS game under development. RTS Game under development. RTS Game under development. ',
 				logo: '/lamden/icons/generic.png',
+				background: '/lamden/images/banner2.jpg',
 				contractName: 'con_lw',
 				networkType: 'testnet',
 				newKeypair: true,
@@ -250,7 +285,9 @@ const Lamden = {
 			return false;
 		}
 		Lamden.account = lamdenInfo.wallets[0];
-		//Lamden.wallet = prompt('wallet');
+		Lamden.wallet = lamdenInfo.wallets[0];
+//		Lamden.wallet = prompt('wallet');
+//		Lamden.account = Lamden.wallet;
 		addMessage('Using wallet ' + Lamden.account.substr(0,16) + '...', '#8cf');
 //		Lamden.url = net.ip + ':' + net.port + '/contracts/' + Lamden.contract;
 		loadAssets();
@@ -272,8 +309,6 @@ const Lamden = {
 		}
 		$.get('./player.php?owner=' + Lamden.account, function(e) {
 			data = JSON.parse(e);
-			//console.log(data);
-			//console.log('Get Player Data: ' + e, data, Object.keys(data).length);
 			if (!data.name) {
 				addMessage('Capital not found for player ' + formatName(Lamden.account) + ', choose settle location');
 				let available = Lamden.availableCapitals();
@@ -289,28 +324,28 @@ const Lamden = {
 				tileHtml(tile.x + ',' + tile.y);
 				return false;
 			}
-			Lamden.wallet = data.address + '-' + data.session;
+			//Lamden.wallet = data.address; // + '-' + data.session;
 			//Lamden.Players[Lamden.wallet] = data;
 			let tile = Tiles[data.x + ',' + data.y];
-			if (tile.owner == Lamden.wallet && tile.building == 1) {
-				addMessage('Capital found at [' + data.x + ',' + data.y + ']');
+			if (tile.owner == Lamden.wallet) {
+				addMessage('Starting location found at [' + data.x + ',' + data.y + ']');
 				Player.capital = true;
 				Tiles[data.x + ',' + data.y] = Tiles[data.x + ',' + data.y] || {x: data.x, y: data.y, type: 'plains', pos: mapPosition(data.x, data.y)};
 				tile.name = data.name;
-				tile.updated = UI.now();
+				//tile.updated = UI.now();
 			} else {
-				addMessage('Capital destroyed, resettle', '#f88');
-				Player.capital = false;
-				Lamden.wallet = '';
-				switchUnitDisplay();
-				World.drawWorld(true);
+				//addMessage('Capital destroyed, resettle', '#f88');
+				//Player.capital = false;
+				//Lamden.wallet = '';
+				//switchUnitDisplay();
+				//World.drawWorld(true);
 			}
-			$('#actions, #tabs').fadeIn(500);
+			Player.tiles = data.tiles;
+			Player.troops = data.troops;
+			Player.fort = data.fort;
+			$('#actions').fadeIn(500);
 			camera.target.position = mapPosition(data.x, data.y);
 			document.getElementById('minimap').src = './map.html?name=' + Lamden.wallet + '&' + Math.random();
-			for (let i = 0; i <= 5; i++) {
-				$('#resources').append('<li id="r' + i + '"><img src="icons/' + (World.Resources[i].icon) + '" title="' + World.Resources[i].name + '"><span>' + formatNumber(Player.Resources[i]) + '</span><b>' + World.Resources[i].name + '</b><i></i></li>');
-			}
 			for (let i in data.resources) {
 				changePlayerResource(i, data.resources[i]);
 			}
@@ -323,6 +358,7 @@ const Lamden = {
 				}
 			}
 			updateUnitCount(data.troops);
+			updateTilesCount(data.tiles);
 			window.setInterval(function() {
 				Lamden.updatePlayer();
 			}, 10000);
@@ -366,7 +402,11 @@ const Lamden = {
 					changePlayerResource(i, data.resources[i] - (Player.Resources[i] || 0));
 				}
 			}
+			Player.tiles = data.tiles;
+			Player.troops = data.troops;
+			Player.fort = data.fort;
 			updateUnitCount(data.troops);
+			updateTilesCount(data.tiles);
 		});
 	},
 	getResources() {
@@ -394,8 +434,8 @@ const Lamden = {
 		$.get('./players.php', function(e) {
 			let data = JSON.parse(e);
 			for (let i in data) {
-				Lamden.Players[data[i].address + '-' + data[i].session] = data[i];
-				$('#players').append(`<li data-x="${data[i].x}" data-y="${data[i].y}">${data[i].name} (${formatNumber(data[i].troops)})</li>`);
+				Lamden.Players[data[i].address /* + '-' + data[i].session */] = data[i];
+				$('#players ul').append(`<li data-x="${data[i].x}" data-y="${data[i].y}">${data[i].name} (${formatNumber(data[i].troops)})</li>`);
 				Lamden.capitals.push(data[i].x + ',' + data[i].y);
 			}
 			World.getTileData();
@@ -502,7 +542,7 @@ function loadAssets() {
 		World.assets['Soldier_01_mesh'].enemy.diffuseTexture = new BABYLON.Texture('data/character_enemy.jpg', scene);
 		//scene.getMeshByName('Base_mesh').scaling.scaleInPlace(.1);
 		//scene.getMeshByName('Soldier_01_mesh').scaling.scaleInPlace(.1);
-		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?32', scene, function(meshes) {
+		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?36', scene, function(meshes) {
 			for (let m in meshes) {
 				meshes[m].position.scaleInPlace(.22);
 				meshes[m].position.y = 1;
@@ -557,13 +597,13 @@ function loadAssets() {
 			UI.friendlyTerritory.material = new BABYLON.StandardMaterial('Friendly', scene);
 			UI.friendlyTerritory.material.diffuseColor = color(0,.5,1);
 			UI.friendlyTerritory.material.specularColor = color(0,0,0);
-			UI.friendlyTerritory.material.alpha = .5;
+			UI.friendlyTerritory.material.alpha = .13;
 
 			UI.enemyTerritory = World.assets['NGon001'].clone('Enemy');
 			UI.enemyTerritory.material = new BABYLON.StandardMaterial('Enemy', scene);
-			UI.enemyTerritory.material.diffuseColor = color(1,0,0);
+			UI.enemyTerritory.material.diffuseColor = color(0.760, 0.4, 0.298)
 			UI.enemyTerritory.material.specularColor = color(0,0,0);
-			UI.enemyTerritory.material.alpha = .3;
+			UI.enemyTerritory.material.alpha = .12;
 
 			UI.tileHighlight = new BABYLON.Mesh.CreatePlane('HighlightTile', 12, scene);
 			UI.tileHighlight.position.y = -10;
@@ -609,7 +649,7 @@ window.setInterval(function() {
 		512 - 100 + tile.x * 2,
 		512 - 100 - tile.y * 2
 	);
-}, 50);
+}, 333);
 window.setInterval(function() {
 	//document.getElementById('minimap').contentWindow.location.reload();
 }, 30000);

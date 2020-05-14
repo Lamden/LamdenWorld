@@ -12,7 +12,7 @@ if ($tile['building'] && !in_array($tile['building'], array(3,4,5))) {
 if (!deductCost($owner, $cost)) {
 	die('{"error": "Not enough resources"}');
 }
-$hp = 1000 + ($id == 15 ? 1000 : 0);
+$hp = 550 + ($id == 15 ? 1000 : 0);
 $hp += round(($tile['level'] - 1) * $hp / 3);
 if (hasResearched($owner, 18)) {
 	$hp *= 2;

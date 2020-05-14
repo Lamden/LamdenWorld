@@ -168,5 +168,29 @@ function hasResearched($player, $tech) {
 	global $sql;
 	return $sql->s("SELECT COUNT(*) FROM research WHERE owner = '$player' AND id = $tech AND stamp < UNIX_TIMESTAMP() - 30");
 }
+function adjacentTiles($x, $y) {
+	if ($y % 2 == 0) {
+		return [
+			[$x, $y + 1],
+			[$x - 1, $y],
+			[$x - 1, $y - 1],
+			[$x, $y - 1],
+			[$x + 1, $y - 1],
+			[$x + 1, $y],
+		];
+	}
+	return [
+		[$x - 1, $y],
+		[$x - 1, $y - 1],
+		[$x, $y - 1],
+		[$x + 1, $y - 1],
+		[$x + 1, $y],
+		[$x, $y + 1],
+	];
+}
+$tiles2sql = function($tiles) {
+	return "x = {$tiles[0]} AND y = {$tiles[1]}";
+};
+
 header('Content-Type: text/html; charset=utf-8', TRUE);
 ?>

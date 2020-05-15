@@ -542,7 +542,7 @@ function loadAssets() {
 		World.assets['Soldier_01_mesh'].enemy.diffuseTexture = new BABYLON.Texture('data/character_enemy.jpg', scene);
 		//scene.getMeshByName('Base_mesh').scaling.scaleInPlace(.1);
 		//scene.getMeshByName('Soldier_01_mesh').scaling.scaleInPlace(.1);
-		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?36', scene, function(meshes) {
+		BABYLON.SceneLoader.ImportMesh('', 'data/', 'trees2.babylon?38', scene, function(meshes) {
 			for (let m in meshes) {
 				meshes[m].position.scaleInPlace(.22);
 				meshes[m].position.y = 1;

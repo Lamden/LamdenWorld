@@ -164,10 +164,10 @@ canvas.addEventListener('mousemove', (e) => {
 			html += '<p>Defense: ' + Tiles[id].fortification + '</p>';
 		}
 		UI.mesh.material.diffuseColor = color(1,1,1);
-		if ((tile.owner && tile.owner != Lamden.wallet) || tile.troopOwner && tile.troopOwner != Lamden.wallet) {
-			html = 'This tile is already owned. ';
-			UI.mesh.material.diffuseColor = color(1,0,0);
-		} else if (UI.availableTiles.indexOf(id) == -1) {
+//		if ((tile.owner && tile.owner != Lamden.wallet) || tile.troopOwner && tile.troopOwner != Lamden.wallet) {
+//			html = 'This tile is already owned. ';
+//			UI.mesh.material.diffuseColor = color(1,0,0);
+		if (UI.availableTiles.indexOf(id) == -1) {
 			html = 'You can only place on tiles adjacent to tiles you already own';
 			UI.mesh.material.diffuseColor = color(1,0,0);
 		} else {
@@ -221,23 +221,23 @@ canvas.addEventListener('mousemove', (e) => {
 			html += '<p>Defense: ' + Tiles[id].fortification + '</p>';
 		}
 		UI.mesh.material.diffuseColor = color(0,1,0);
-		if (UI.building != 12 && tile.type == 'water') {
-			UI.mesh.material.diffuseColor = color(1,0,0);
-			html += 'Cannot place on water. ';
-		} else if (UI.building == 12 && tile.type != 'water') {
-			UI.mesh.material.diffuseColor = color(1,0,0);
-			html += 'Must be placed on water. ';
+//		if (UI.building != 12 && tile.type == 'water') {
+//			UI.mesh.material.diffuseColor = color(1,0,0);
+//			html += 'Cannot place on water. ';
+//		} else if (UI.building == 12 && tile.type != 'water') {
+//			UI.mesh.material.diffuseColor = color(1,0,0);
+//			html += 'Must be placed on water. ';
 //		} else if (tile.owner != Lamden.wallet) {
 //			UI.mesh.material.diffuseColor = color(1,0,0);
 //			html += 'You must colonize this tile first before you can build there. ';
-		} else if (UI.availableTiles.indexOf(id) == -1) {
+		if (UI.availableTiles.indexOf(id) == -1) {
 			UI.mesh.material.diffuseColor = color(1,0,0);
-			html += 'You can only place buildigns on tiles with your troops on them, adjacent to a building you own and not adjacent to enemy territory. ';
+			html += 'Cannot place here. ';
 		} else if (tile.building) {
 			UI.mesh.material.diffuseColor = color(1,0,0);
 			html += 'Tile occupied already';
 		} else {
-			html += 'Left-click to place building here. ';
+			html += 'Left-click to place here. ';
 		}
 		html += '<br>Esc or right-click to cancel';
 		$('#tooltip').show().html(html).css({left: scene.pointerX + 10, top: scene.pointerY + 10});
@@ -813,7 +813,7 @@ function tileHtml(id) {
 		html += '<p>Uncolonized</p>';
 	}
 	html += '<dl>';
-	html += '<dt><img src="icons/crosshair.png" style="width: 32px; ">Troops on tile</dt><dd style="height:40px; ">'
+	html += '<dt><img src="icons/crosshair.png" style="width: 32px; ">Attack</dt><dd style="height:40px; ">'
 	html += formatNumber(tile.numTroops ? tile.numTroops : 0) + '/' + formatNumber(custom.maxOccupancy(tile)) + '</dt>';
 	if (tile.fortification) {
 		html += '<dt><img src="icons/shield.png" style="width: 32px; ">Defense</dt><dd style="height:40px; ">' + formatNumber(tile.fortification) + '/' + formatNumber(custom.maxFort(tile)) + '</dd>'
@@ -1050,7 +1050,7 @@ function tileHtml(id) {
 		html += '<p style="margin-bottom: -20px; "><label style="margin-left: 20px">Attack</label><label style="margin-left: 100px">Defense</label></p>';
 		html += '<input type="text" id="split-units" value="' + (tile.numTroops || 0) + '" style="margin: 20px; ">';
 		html += '<input type="text" id="split-defense" value="' + (tile.fortification || 0) + '" style="margin: 20px; ">';
-		html += '<br>';
+		html += '<p id="action-cost" style="text-align: center; ">' + costHtml({0: (tile.numTroops || 0) + (tile.fortification || 0)}) + '</p>';
 		html += '<button id="move-button" title="Move to any other tile you own">Move</button>';
 		html += '<button id="attack-button" title="Attack neighboring enemy tile">Attack</button>';
 		html += '<button id="pick-up" title="Return units to inventory">Pick Up</button>';
@@ -1086,12 +1086,10 @@ $('#tabs li').click(function(e) {
 	tabHtml(tab);
 });
 
-$('#info-panel').on('keyup keypress', '#missile-power', function(e) {
-	let val = parseInt($('#missile-power').val());
-	if (!val || val <= 0) {
-		val = 0;
-	}
-	$('#missile-cost').html(val + 1000);
+$('#info-panel').on('keyup keypress', '#split-units, #split-defense', function(e) {
+	let units = parseInt($('#split-units').val()) || 0;
+	let fort = parseInt($('#split-defense').val()) || 0;
+	$('#action-cost').html(costHtml({0: units+fort}));
 });
 
 UI.cancel = function() {
@@ -1930,9 +1928,9 @@ function changePlayerResource(id, amount) {
 		deployed = (parseInt(id) == 4 ? Player.troops : Player.fort);
 	}
 	// update ui
-	if (!$('#r' + id)[0] && Player.Resources[id] > 0) {
+	if (!$('#r' + id)[0]) {
 		var html = '<li id="r' + id + '"><img src="icons/' + (World.Resources[id].icon ? World.Resources[id].icon : 'ingot.png') + '" title="' + World.Resources[id].name + '">';
-		html += '<div><s></s><b></b><i></i></div>';
+		html += '<div>' + (id >= 4 ? '<s></s>' : '') + '<b></b><i></i></div>';
 		html += `<span class="own">${formatNumber(Player.Resources[id])}</span>`;
 		html += '<span class="cap">' + formatNumber(cap) + '</span>';
 		if (id == 4) {
@@ -1971,7 +1969,7 @@ function changePlayerResource(id, amount) {
 function costHtml(cost) {
 	let html = '';
 	for (let c in cost) {
-		html += '<img src="icons/' + World.Resources[c].icon + '" style="width: 16px; height: 16px; ">';
+		html += '<img src="icons/' + World.Resources[c].icon + '" style="width: 16px; height: 16px; position: relative; top: 4px; ">';
 		html += World.Resources[c].name + `: <span style="color: ${cost[c]>Player.Resources[c]?'#f88':'#fff'}">${cost[c]}</span>, `;
 	}
 	return html;
@@ -2589,6 +2587,8 @@ window.setInterval(function() {
 }, 5000);
 function calcStorage(resource) {
 	let amount = 1000;
+	//if (resource == 0) amount = 5000;
+	if (resource == 5) amount = 1400;
 	for (let t in Player.territory) {
 		let tile = Player.territory[t];
 		if (tile.building && World.buildingData[tile.building].produces == resource) {

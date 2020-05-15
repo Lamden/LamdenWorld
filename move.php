@@ -100,104 +100,79 @@ if ($units > 0 && $units < $attacker['numTroops'] && (!$defender['owner'] || $de
 }*/
 
 if ($defender && $destinationHostile) { // existing tile
-	// check if defender capital alive
-	/*
-	if (($defender['troopOwner'] || $defender['owner']) && !$sql->s("SELECT COUNT(*) FROM players AS p
-		JOIN tiles AS t ON p.x = t.x AND p.y = t.y AND t.building = 1 AND t.owner = CONCAT(p.address, '-', p.session)
-		WHERE t.owner = '" . ($defender['troopOwner'] ? $defender['troopOwner'] : $defender['owner']) . "'")) {
-		if ($defender['numTroops']) {
-			$sql->q("UPDATE tiles SET numTroops = 0, troopOwner = '' WHERE x = $x2 AND y = $y2");
-			$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2) VALUES ('attack', $x, $y, $x2, $y2, {$attacker['numTroops']}, 0)");
-		}
-		if ($defender['hp']) {
-			$sql->q("UPDATE tiles SET hp = 0, building = 0, level = 1, owner = '', fort = 0 WHERE x = $x2 AND y = $y2");
-			$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2, var3) VALUES ('siege', $x, $y, $x2, $y2,{$attacker['numTroops']}, 0, 0)");
-		}
-		echo '[]';
-		die();
-	} */
 	$fortAbsorb = 0;
 	// fort
-	if ($defender['fort'] && $defender['owner'] != $attacker['troopOwner']) {
+	if ($defender['fort'] || $attacker['fort']) {
+echo 'd fort';
 		$battle = true;
 		$siege = true;
 		// reculcalate power
-		$aPower = $attacker['numTroops'] * (hasResearched($attacker['troopOwner'], 5) ? 1.1 : 1) * (hasResearched($defender['troopOwner'], 10) ? .9 : 1);
-		$fortAbsorb = $defender['fort'];
-		$dPower = 0; // $defender['fort'];
+		$aPower = $attacker['numTroops'];
+		$dFortAbsorb = $defender['fort'];
 		$defender['fort'] = clamp($defender['fort'] - ($aPower), 0, $defender['fort']);
-		$attacker['numTroops'] = clamp($attacker['numTroops'] - $dPower, 0, $attacker['numTroops']);
 	}
 
 	// battle
-	if ($defender['numTroops'] && $defender['troopOwner'] != $attacker['troopOwner']) {
+	if ($defender['numTroops'] && $attacker['numTroops'] - $dFortAbsorb > 0) {
+echo 'd battle';
 		$battle = true;
-		// power = #troops * techMultipliers, 5 increases power, 6 decreases opponent power
-		$aPower = clamp($attacker['numTroops'] - $fortAbsorb, 0, $attacker['numTroops']);
-		$dPower = $defender['numTroops'];
-/*		if ($defender['numTroops'] > $aPower) { // defender stronger
-			$defender['numTroops'] -= $aPower;
-			$attacker['numTroops'] = 0;
-		} else { // attacker stronger
-			$attacker['numTroops'] -= $dPower;
-			$defender['numTroops'] = 0;
-		}*/
-		$defender['numTroops'] = round(clamp($defender['numTroops'] - $aPower, 0, $defender['numTroops']));
-		$attacker['numTroops'] = round(clamp($attacker['numTroops'] - $dPower, 0, $attacker['numTroops']));
-		$sql->q("UPDATE tiles SET numTroops = {$attacker['numTroops']}" . ($attacker['numTroops'] == 0 ? ", troopOwner = ''" : '') . " WHERE x = $x AND y = $y");
+		$aPower = clamp($attacker['numTroops'] - $dFortAbsorb, 0, $attacker['numTroops']);
+		$dFortAbsorb += $defender['numTroops'];
+		$defender['numTroops'] = clamp($defender['numTroops'] - $aPower, 0, $defender['numTroops']);
 		$sql->q("UPDATE tiles SET numTroops = {$defender['numTroops']}" . ($defender['numTroops'] == 0 ? ", troopOwner = ''" : '') . " WHERE x = $x2 AND y = $y2");
 		$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2) VALUES ('attack', $x, $y, $x2, $y2, {$attacker['numTroops']}, {$defender['numTroops']})");
 	}
 
 	// building
-	if ($defender['owner'] && $defender['owner'] != $attacker['troopOwner']) {
+	if ($defender['owner']) {
 		$battle = true;
 		$siege = true;
 	}
-	if ($defender['hp'] && $defender['owner'] != $attacker['troopOwner']) {
-		$aPower = clamp($attacker['numTroops'] - $fortAbsorb, 0, $attacker['numTroops']);
-		$dPower = ($defender['hp'] == 1 ? 0 : 0) * (hasResearched($attacker['troopOwner'], 6) ? .9 : 1);
-		if ($defender['building'] == 1) {
-			// $dPower = $defender['hp'];
-		}
-/*		if ($defender['hp'] > $attacker['numTroops']) { // defender stronger
-			$attacker['numTroops'] -= $attacker['numTroops'] > 100 ? 100 : $attacker['numTroops'];
-			$defender['hp'] -= $attacker['numTroops'];
-		} else { // attacker stronger
-			$attacker['numTroops'] -= 100;
-			$defender['hp'] = 0;
-		}*/
+var_dump($defender['hp'] , $attacker['numTroops'], $dFortAbsorb);
+	if ($defender['hp'] && $attacker['numTroops'] - $dFortAbsorb > 0) {
+echo 'd building';
+		$aPower = clamp($attacker['numTroops'] - $dFortAbsorb, 0, $attacker['numTroops']);
 		$defender['hp'] = clamp($defender['hp'] - $aPower, 0, $defender['hp']);
-		$attacker['numTroops'] = clamp($attacker['numTroops'] - $dPower, 0, $attacker['numTroops']);
 	}
 
 	if ($siege) {
-		$sql->q("UPDATE tiles SET numTroops = {$attacker['numTroops']}" . ($attacker['numTroops'] == 0 ? ", troopOwner = ''" : '') . " WHERE x = $x AND y = $y");
+		//$sql->q("UPDATE tiles SET numTroops = {$attacker['numTroops']}" . ($attacker['numTroops'] == 0 ? ", troopOwner = ''" : '') . " WHERE x = $x AND y = $y");
 		$sql->q("UPDATE tiles SET hp = {$defender['hp']}" . ($defender['hp'] == 0 ? ", building = 0, level = 1, owner = ''" : '') . ", fort = {$defender['fort']} WHERE x = $x2 AND y = $y2");
 		$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2, var3) VALUES ('siege', $x, $y, $x2, $y2,{$attacker['numTroops']}, {$defender['hp']}, {$defender['fort']})");
 	}
-/*	if (!$battle) { // move to existing tile
-		$sql->q("UPDATE tiles SET numTroops = 0, troopOwner = '' WHERE x = $x AND y = $y");
-		// merge
-		if ($defender['numTroops'] && $defender['troopOwner'] == $attacker['troopOwner']) {
-			$sql->q("UPDATE tiles SET numTroops = numTroops + {$attacker['numTroops']} WHERE x = $x2 AND y = $y2");
-			$sql->q("INSERT INTO log (type, x, y, x2, y2) VALUES ('move', $x, $y, $x2, $y2)");
-		} else { // move
-			$sql->q("UPDATE tiles SET numTroops = {$attacker['numTroops']}, " . ($defender['owner'] != $attacker['troopOwner'] ? "owner = '', " : '') . " troopOwner = '{$attacker['troopOwner']}' WHERE x = $x2 AND y = $y2");
-			$sql->q("INSERT INTO log (type, x, y, x2, y2) VALUES ('move', $x, $y, $x2, $y2)");
-		}
-	} */
-/* } else {
-	// move to new tile
-	$type = clamp((int)$attacker['type'] + (rand(0,1) == 0 ? -5 : 5), 0, 255);
-	if ($type <= 80) { // water
-		$sql->q("INSERT INTO tiles (type, x, y) VALUES ($type, $x2, $y2)");
-	} else {
-		$sql->q("UPDATE tiles SET numTroops = 0, troopOwner = '' WHERE x = $x AND y = $y");
-		$sql->q("INSERT INTO tiles (type, x, y, numTroops, troopOwner) VALUES ($type, $x2, $y2, {$attacker['numTroops']}, '{$attacker['troopOwner']}')");
+	// retaliation
+	$siege = false;
+var_dump($defender['numTroops'] , $attacker['fort']);
+	if ($defender['numTroops'] && $attacker['fort']) {
+echo 'a fort';
+		$siege = true;
+		$aFortAbsorb = $attacker['fort'];
+		$dPower = $defender['numTroops'];
+echo $dPower;
+		$attacker['fort'] = clamp($attacker['fort'] - $dPower, 0, $attacker['fort']);
 	}
-	$sql->q("INSERT INTO log (type, x, y, x2, y2, var2) VALUES ('move', $x, $y, $x2, $y2, $type)");
-	*/
+	// battle
+	if ($defender['numTroops'] && $attacker['numTroops']) {
+echo 'a battle';
+		$battle = true;
+		$dPower = clamp($defender['numTroops'] - $aFortAbsorb, 0, $defender['numTroops']);
+		$aFortAbsorb += $attacker['numTroops'];
+echo $dPower;
+		$attacker['numTroops'] = clamp($attacker['numTroops'] - $dPower, 0, $attacker['numTroops']);
+		$sql->q("UPDATE tiles SET numTroops = {$attacker['numTroops']}" . ($attacker['numTroops'] == 0 ? ", troopOwner = ''" : '') . " WHERE x = $x AND y = $y");
+		$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2) VALUES ('attack', $x, $y, $x2, $y2, {$attacker['numTroops']}, {$defender['numTroops']})");
+	}
+	if ($attacker['hp'] && $defender['numTroops'] - $aFortAbsorb > 0) {
+echo 'a building';
+		$siege = true;
+		$dPower = clamp($defender['numTroops'] - $aFortAbsorb, 0, $defender['numTroops']);
+		$attacker['hp'] = clamp($attacker['hp'] - $dPower, 0, $attacker['hp']);
+	}
+	if ($siege) {
+		$sql->q("UPDATE tiles SET hp = {$attacker['hp']}" . ($attacker['hp'] == 0 ? ", building = 0, level = 1, owner = ''" : '') . ", fort = {$attacker['fort']} WHERE x = $x AND y = $y");
+		$sql->q("INSERT INTO log (type, x, y, x2, y2, var1, var2, var3) VALUES ('siege', $x2, $y2, $x, $y,{$defender['numTroops']}, {$attacker['hp']}, {$attacker['fort']})");
+	}
+
 }
 echo '[';
 echo sql2json($sql->q("SELECT * FROM tiles WHERE x = $x AND y = $y"));

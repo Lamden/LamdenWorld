@@ -11,7 +11,7 @@ const World = {
 		//2: {name: 'Wall', requiresTile: 'grass', hp: 2000, cost: {2: 100, 5: 200}, mesh: 'Wall', meshScale: .2225, description: 'To prevent illegal immigrants. '},
 		3: {name: 'Rock Mine', requiresTile: 'all', produces: 2, productionSpeed: 1, hp: 550, cost: {0: 300, 1: 450, 3: 300}, icon: 'mine', mesh: 'Mine1', meshScale: .2225, description: 'Produces rocks'},
 		4: {name: 'Oil Well', requiresTile: 'all', produces: 3, productionSpeed: 1, hp: 550, cost: {0: 300, 1: 300, 2: 450}, icon: 'pumpjack', mesh: 'Pumpjack', meshScale: .2225, description: 'Produces oil'},
-		5: {name: 'Sand Quarry', requiresTile: 'all', produces: 1, productionSpeed: 1, hp: 550, cost: {0: 300, 2: 300, 3: 450}, icon: 'mine', mesh: 'Mine1', meshScale: .2225, description: 'Produces minerals'},
+		5: {name: 'Sand Quarry', requiresTile: 'all', produces: 1, productionSpeed: 1, hp: 550, cost: {0: 300, 2: 300, 3: 450}, icon: 'mine', mesh: 'Quarry', meshScale: .2225, description: 'Produces minerals'},
 		//6: {name: 'Pumpjack', requiresTile: 'desert', requiresTech: 2, produces: 6, productionSpeed: 1, hp: 1000, cost: {4: 800}},
 		7: {name: 'Power Plant', requiresTile: 'grass', /* requiresTech: 1, */ produces: 0, productionSpeed: 1.5, hp: 550, cost: {1: 300, 2: 300, 3: 300}, icon: 'powerplant', mesh: 'Powerplant2', meshScale: .2225, smoke: v(2.6,2,-.4), description: 'Produces energy'},
 		//8: {name: 'Barracks', requiresTile: 'grass', hp: 1000, cost: {4: 100}, icon: 'barracks', mesh: 'Barracks2', meshScale: .2225, description: 'Produces units at a smaller scale'},

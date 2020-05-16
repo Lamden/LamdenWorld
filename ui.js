@@ -1676,7 +1676,7 @@ function massHarvest(resource) {
 		amount = clamp(cap - Player.Resources[resource] - deployed, 0, cap);
 	}
 	if (amount == 0) {
-		addMessage('Capacity reached', '#f88');
+		addMessage(`Capacity reached for ${World.Resources[resource].name} (${cap})`, '#f88');
 		World.Sounds.tick1.play();
 		return;
 	}

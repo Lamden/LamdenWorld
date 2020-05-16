@@ -17,7 +17,7 @@ if ($player) {
 	die('{"error": "Player already settled. "}');
 }
 $tile = $sql->get("SELECT * FROM tiles WHERE x = $x AND y = $y");
-if ($tile['owner']) {
+if ($tile['owner'] || $tile['troopOwner']) {
 	die('{"error": "Tile already taken"}');
 }
 $session = rand(1,9999);

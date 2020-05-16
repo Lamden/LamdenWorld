@@ -24,7 +24,7 @@ const World = {
 		//15: {name: 'Bunker', requiresTile: 'grass', hp: 5000, cost: {0: 100, 1: 100, 2: 100, 3: 100, 5: 100}, icon: 'bunker', mesh: 'Bunker', meshScale: .2225, description: 'Can house much more additional units compared to other tiles. '},
 		//16: {name: 'Missile Defense System', requiresTile: 'grass', hp: 1000, cost: {0: 1000, 2: 100, 4: 100}, mesh: 'Silo2', meshScale: .2225, description: 'Defends your territory in a 5 tile radius from missile attacks. Succes rate 50%. '},
 		//17: {name: 'Artillery Tower', requiresTile: 'grass', hp: 500, power: 500, cost: {0: 1000, 2: 100, 4: 100}, description: 'Simple defensive structure to withstand small attacks in a 5 tile radius. '},
-		18: {name: 'Brick Factory', /* requiresTech: 4, */ requiresTile: 'grass', produces: 5, productionSpeed: 1, hp: 550, cost: {0: 450, 1: 150, 2: 450, 3: 300}, icon: 'refinery', hp: 1000, mesh: 'Refinery2', meshScale: .2225, description: 'Produces defense units which you can use to level up walls.'},
+		18: {name: 'Brick Factory', /* requiresTech: 4, */ requiresTile: 'grass', produces: 5, productionSpeed: 1, hp: 550, cost: {0: 450, 1: 150, 2: 450, 3: 300}, icon: 'refinery', hp: 1000, mesh: 'Refinery2', meshScale: .2225, description: 'Produces Defense units to bolster your position as well as Heal Buildings.'},
 	},
 	/*
 	Conversions: {

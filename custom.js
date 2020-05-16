@@ -46,6 +46,7 @@ custom = {
 		if (!World.buildingData[tile.building]) {
 			return 1;
 		}
+		return 550;
 		let hp = World.buildingData[tile.building].hp + Math.floor((tile.level - 1) * World.buildingData[tile.building].hp / 3);
 		hp *= techHasResearched(18) ? 2 : 1;
 		return hp;

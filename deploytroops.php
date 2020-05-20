@@ -23,7 +23,7 @@ if (!$tile['type']) {
 		die();
 	}
 	echo $previousType;
-	$type = clamp((int)$previousType + (rand(0,1) == 0 ? -5 : 5), 0, 255);
+	$type = clamp((int)$previousType + (rand(0,1) == 0 ? -5 : 5), 1, 255);
 	if ($type <= 80) { // water
 		$sql->q("INSERT INTO tiles (type, x, y) VALUES ($type, $x, $y)");
 	} else {

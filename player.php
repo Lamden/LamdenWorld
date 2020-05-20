@@ -1,10 +1,10 @@
 <?
 require('lite.php');
 $owner = $request->get('owner', 64);
-$player = $sql->get("SELECT p.address, p.name, p.session, p.x, p.y
+$player = $sql->get("SELECT p.address, p.name, p.session, t.x, t.y
 	FROM players AS p
-	JOIN tiles AS t ON p.x = t.x AND p.y = t.y AND t.owner = p.address
-	WHERE p.address = '$owner'");
+	JOIN tiles AS t ON p.address = t.owner
+	WHERE p.address = '$owner' LIMIT 1");
 if (!$player) {
 	echo '{}';
 	die();

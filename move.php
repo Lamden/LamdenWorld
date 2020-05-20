@@ -53,7 +53,7 @@ if (!$defender || $emptyDestination || $ownDestination) {
 			$sql->q("UPDATE tiles SET owner = '' WHERE x = $x AND y = $y");
 		}
 		if (!$defender) { // move to unexplored tile
-			$type = clamp((int)$attacker['type'] + (rand(0,1) == 0 ? -5 : 5), 0, 255);
+			$type = clamp((int)$attacker['type'] + (rand(0,1) == 0 ? -5 : 5), 1, 255);
 			$sql->q("INSERT INTO tiles (type, x, y) VALUES ($type, $x2, $y2)");
 		}
 		if ($units) {
@@ -141,13 +141,11 @@ echo 'd building';
 	}
 	// retaliation
 	$siege = false;
-var_dump($defender['numTroops'] , $attacker['fort']);
 	if ($defender['numTroops'] && $attacker['fort']) {
 echo 'a fort';
 		$siege = true;
 		$aFortAbsorb = $attacker['fort'];
 		$dPower = $defender['numTroops'];
-echo $dPower;
 		$attacker['fort'] = clamp($attacker['fort'] - $dPower, 0, $attacker['fort']);
 	}
 	// battle

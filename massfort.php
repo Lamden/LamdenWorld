@@ -19,11 +19,7 @@ foreach ($tiles as $key => $num) {
 	$c[1] = (int)$c[1];
 	$tile = $sql->get("SELECT * FROM tiles WHERE x = $c[0] AND y = $c[1]");
 
-	$hp = 0 + ($tile['building'] ? 1000 : 0) + ($tile['building'] == 15 ? 1000 : 0);
-	if ($tile['building'] == 1) {
-		$hp = 10000;
-	}
-	$hp += round(($tile['level'] - 1) * $hp / 3);
+	$hp = 550;
 	$repair = 0;
 	if ($tile['hp'] < $hp) {
 		$diff = $hp - $tile['hp'];

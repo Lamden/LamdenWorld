@@ -2096,6 +2096,9 @@ function deployMode() {
 		if ((Tiles[t].owner && Tiles[t].owner != Lamden.wallet) || Tiles[t].troopOwner && Tiles[t].troopOwner != Lamden.wallet) {
 			continue;
 		}
+		if (Tiles[t].terrain && Tiles[t].terrain <= 80) {
+			continue;
+		}
 		let neighbors = World.getAdjacentTiles(Tiles[t].x, Tiles[t].y);
 		for (let n in neighbors) {
 			var ownsNeighbor = false;
@@ -2230,23 +2233,9 @@ $('#actions').on('click', '#buildings a', function(e) {
 	deleteHighlight();
 	UI.tool = 'build';
 	for (var t in Tiles) {
-		if (/* Tiles[t].unit && Tiles[t].unit.owner == Lamden.wallet && */ Tiles[t].terrain > 80 && !Tiles[t].building) {
-			let ownsNeigbors = false;
-			let enemyAdjacent = false;
-			let neighbors = World.getAdjacentTiles(Tiles[t].x, Tiles[t].y);
-			for (let n in neighbors) {
-				if (neighbors[n].owner == Lamden.wallet && neighbors[n].building) {
-					ownsNeigbors = true;
-				}
-				if (neighbors[n].owner && neighbors[n].owner != Lamden.wallet) {
-					enemyAdjacent = true;
-				}
-			}
-			if ((Tiles[t].troopOwner == Lamden.wallet || Tiles[t].owner == Lamden.wallet) && !enemyAdjacent) {
-				console.log(t);
-				UI.availableTiles.push(Tiles[t].x + ',' + Tiles[t].y);
-				addModel(UI.tileHighlight, Tiles[t].pos.add(v(0,.1,0)), v(Math.PI/2,0,0), 1);
-			}
+		if (Tiles[t].terrain > 80 && !Tiles[t].building && (Tiles[t].troopOwner == Lamden.wallet || Tiles[t].owner == Lamden.wallet)) {
+			UI.availableTiles.push(Tiles[t].x + ',' + Tiles[t].y);
+			addModel(UI.tileHighlight, Tiles[t].pos.add(v(0,.1,0)), v(Math.PI/2,0,0), 1);
 		}
 	}
 	updateSPSMeshes();
